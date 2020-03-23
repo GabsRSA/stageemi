@@ -1,0 +1,5 @@
+setup.py
+stageemi.egg-info/PKG-INFO
+stageemi.egg-info/SOURCES.txt
+stageemi.egg-info/dependency_links.txt
+stageemi.egg-info/top_level.txt

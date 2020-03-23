@@ -1,0 +1,45 @@
+Code WWMF,Legende WWMF,Code W1,Legende W1,Code NEBUL,Legende NEBUL,Code WME,Legende WME
+-1,Inconnu,-1,Inconnu,-1,Inconnu,-1,Inconnu
+0,Clair,0,RAS,0,0 à 2 octats,1,Clair/Peu nuageux
+1,Peu nuageux,0,RAS,0,0 à 2 octats,1,Clair/Peu nuageux
+2,Nuageux,0,RAS,1,3 à 4 octats,2,Nuageux
+3,Très nuageux,0,RAS,2,5 à 6 octats,3,Très nuageux/Couvert
+4,Couvert,0,RAS,3,7 à 8 octats,3,Très nuageux/Couvert
+5,Variable,0,RAS,4,Traîne,2,Nuageux
+6,Voilé,0,RAS,5,Voilé,2,Nuageux
+10,Sable,0,RAS,-1,Inconnu,-1,Inconnu
+15,Trombe,0,RAS,-1,Inconnu,-1,Inconnu
+30,Brume/Brouillard,1,Brume ou brouillard peu dense,-1,Inconnu,4,Brume/Brouillard/Grisaille
+31,Brume,1,Brume ou brouillard peu dense,-1,Inconnu,4,Brume/Brouillard/Grisaille
+32,Brouillard,2,Brouillard dense par place,-1,Inconnu,4,Brume/Brouillard/Grisaille
+33,Brouillard dense,3,Brouillard dense généralisé,-1,Inconnu,4,Brume/Brouillard/Grisaille
+38,Brouillard givrant,5,Brouillard givrant dense par place,-1,Inconnu,5,Brume/Brouillard givrant
+39,Brouillard dense givrant,6,Brouillard givrant dense généralisé,-1,Inconnu,5,Brume/Brouillard givrant
+40,Bruine,7,Bruine,-1,Inconnu,6,Pluie faible
+49,Bruine verglaçante,8,Bruine ou pluie verglaçante,-1,Inconnu,7,Neige faible
+50,Pluie,10,Pluie faible ou modérée généralisée,-1,Inconnu,8,Pluie
+51,Pluie faible,9,Pluie faible par place,-1,Inconnu,6,Pluie faible
+52,Pluie modérée,10,Pluie faible ou modérée généralisée,-1,Inconnu,8,Pluie
+53,Pluie forte,11,Pluie forte généralisée,-1,Inconnu,9,Pluie abondante
+58,Pluie et neige mêlées,14,Pluie et neige mêlées,-1,Inconnu,7,Neige faible
+59,Pluie verglaçante,8,Bruine ou pluie verglaçante,-1,Inconnu,10,Neige
+60,Neige,16,Neige faible ou modérée généralisée,-1,Inconnu,10,Neige
+61,Neige faible,13,Neige faible par place,-1,Inconnu,7,Neige faible
+62,Neige modérée,16,Neige faible ou modérée généralisée,-1,Inconnu,10,Neige
+63,Neige forte,17,Neige forte généralisée,-1,Inconnu,11,Neige abondante
+70,Averses,19,Averses de pluie,-1,Inconnu,14,Averses
+71,Rares averses,18,Rares averses de pluie,-1,Inconnu,12,Quelques averses
+72,Rares averses avec ciel couvert,18,Rares averses de pluie,-1,Inconnu,12,Quelques averses
+73,Averses avec ciel couvert,19,Averses de pluie,-1,Inconnu,14,Averses
+77,Averses de pluie et neige mêlées,20,Averses de pluie et neige mêlées,-1,Inconnu,13,Quelques averses de neige
+78,Averses de pluie et neige mêlées avec ciel couvert,20,Averses de pluie et neige mêlées,-1,Inconnu,13,Quelques averses de neige
+80,Averses de neige,22,Averses de neige,-1,Inconnu,15,Averses de neige
+81,Rares averses de neige,21,Rares averses de neige,-1,Inconnu,13,Quelques averses de neige
+82,Rares averses de neige avec ciel couvert,21,Rares averses de neige,-1,Inconnu,13,Quelques averses de neige
+83,Averses de neige avec ciel couvert,22,Averses de neige,-1,Inconnu,15,Averses de neige
+84,Averses de grésil,23,Averses de grêle,-1,Inconnu,16,Averses orageuses
+85,Averses de grêle,23,Averses de grêle,-1,Inconnu,16,Averses orageuses
+90,Orages,24,Orages possibles,-1,Inconnu,18,Orages
+97,Orages avec neige,24,Orages possibles,-1,Inconnu,19,Orages de neige
+98,Orages avec grêle,28,Orages de grêles possibles,-1,Inconnu,19,Orages de neige
+99,Orages violents,26,Orages violent possibles,-1,Inconnu,18,Orages
