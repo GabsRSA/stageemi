@@ -24,19 +24,6 @@ def read_xarray(file):
     data.close()
     return data
 
-
-# def conversion_old(ds):
-#     """convert wwmf code into wme code"""
-#     file_CodesWWMF= '../../utils/CodesWWMF.csv'
-#     df_WWMF = pandas.read_csv(file_CodesWWMF,usecols = (0,1,6,7),sep=',')
-    
-#     ds["wme_arr"]=ds.unknown
-
-#     for iwwmf,wwmf in enumerate(df_WWMF["Code WWMF"]):
-#         ds["wme_arr"]=ds["wme_arr"].where(ds.unknown!=wwmf,df_WWMF["Code WME"][iwwmf])
-        
-#     return ds
-
 def conversion(ds,name):
     """convert wwmf into wme (compas) or w1 (agat) code"""
     
@@ -52,7 +39,17 @@ def conversion(ds,name):
         var_name="w1_arr"
         col_name="Code W1"
         ds[var_name]=ds.unknown        
-
+    
+    elif name=="compas_asym":
+        var_name="wme_asym_arr"
+        col_name="Code WME"
+        ds[var_name]=ds.unknown
+        
+    elif name=="agat_asym":
+        var_name="w1_asym_arr"
+        col_name="Code W1"
+        ds[var_name]=ds.unknown
+        
     for iwwmf,wwmf in enumerate(df_WWMF["Code WWMF"]):
         #print(wwmf,df_WWMF["Code WME"][iwwmf])
         ds[var_name]=ds[var_name].where(ds.unknown!=wwmf,df_WWMF[col_name][iwwmf])
@@ -556,7 +553,18 @@ def distance(ds,name,**options):
         df_dist = pandas.read_csv(fname_dist,sep=',')  
         var_name="w1_arr"
         varsh="w1_c_"
-    
+        
+    elif name == "compas_asym":
+        fname_dist = '../../utils/distance_compas_asym.csv'
+        df_dist = pandas.read_csv(fname_dist,sep=',')
+        var_name="wme_asym_arr"
+        varsh="wme_asym_c_"
+        
+    elif name == "agat_asym":
+        fname_dist = '../../utils/distance_agat_asym.csv'
+        df_dist = pandas.read_csv(fname_dist,sep=',')  
+        var_name="w1_asym_arr"
+        varsh="w1_asym_c_" 
         
     if options.get("action") == "test":
         """used to test over few pixels only in debug mode"""
@@ -588,7 +596,11 @@ def shortest_distance_temps_sensible_Mary(ds,name):
     if name=="compas": 
         varsh="wme_c_"
     elif name=="agat": 
-        varsh="w1_c_"
+        varsh="w1_c_"    
+    elif name=="compas_asym": 
+        varsh="wme_asym_c_"
+    elif name=="agat_asym": 
+        varsh="w1_asym_c_"
 
     """find all newly added variables linked to wme or w1 resulting from the distance calulation"""
     allvar=list(ds.data_vars)
