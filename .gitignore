@@ -1,0 +1,7 @@
+# Jupyter
+*.py?
+*.ipynb_checkpoints
+# Python
+*__pycache__*
+*.egg-info/
+
