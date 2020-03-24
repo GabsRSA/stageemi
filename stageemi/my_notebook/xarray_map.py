@@ -86,9 +86,10 @@ class interactive_map(widg.HBox):
         
     def mask_da(self):
         self.da_masked = (self.da *self.mask).squeeze("id")
-        
+  
     def aggregate(self):
         self.da_aggregated = (self.da_masked * self.da_zone).mean(["latitude","longitude"])
+   
         
     def get_mask(self):
         if self.dept == "38":
@@ -98,6 +99,7 @@ class interactive_map(widg.HBox):
         else: 
             raise(ValueError("Departement not known. Please add it"))
         da_mask["latitude"] = da_mask.latitude.round(5)
+        da_mask["longitude"] = da_mask.longitude.round(5)
         self.mask = da_mask
         
     @property 
@@ -128,13 +130,14 @@ class interactive_map(widg.HBox):
         #start modif read Mary zone sympos files
         fname_mask = '../GeoData/zones_sympo_multiples/'+self.dept+'_mask_zones_sympos.nc'
         da_mask = xr.open_dataarray(fname_mask)
-        zs_l=[zs for zs in da_mask.id.values.tolist() if "+" not in zs]
-        zs_N=len(zs_l)
-        self.da_zone=da_mask.isel(id=slice(1,zs_N)).load()
-        print(self.da_zone)
+        zs_l = [zs for zs in da_mask.id.values.tolist() if "+" not in zs]
+        zs_N = len(zs_l)
+        self.da_zone = da_mask.isel(id=slice(1,zs_N)).load()
+        #print(self.da_zone)
         #end modif 
         
         self.da_zone["latitude"] = self.da_zone.latitude.round(5)
+        self.da_zone["longitude"] = self.da_zone.longitude.round(5)
         #zsympo = "../GeoData/ZonesSympo/zones_sympo_4326.json"
         zsympo = "../GeoData/ZonesSympo/zones_sympo_38.json"
         
@@ -146,7 +149,7 @@ class interactive_map(widg.HBox):
         new_poly["features"] = []
         for x in poly_geojson["features"]:
             if x["properties"]["id"] in self.da_zone.id.values:
-                print("par ici")
+           
                 x["id"] = x["properties"]["id"]
                 new_poly["features"].append(x)
         self.region_geo = new_poly 
@@ -181,6 +184,7 @@ class interactive_map(widg.HBox):
             raise(ValueError("Unknown variable"))
         self.da = xr.open_dataarray(fname)
         self.da['latitude'] = self.da.latitude.round(5)
+        self.da['longitude'] = self.da.longitude.round(5)
         if hasattr(self,"mask"):
              self.mask_da()
         if hasattr(self,"da_zone"):
@@ -200,11 +204,17 @@ class interactive_map(widg.HBox):
     def update_chor_html(self,feature,**kwargs):
         id_i = feature["properties"]["id"]
         x = self.da_aggregated.isel(step=self.step).sel(id=id_i).values
-        self.html1.value = '''
-        <h4> Valeur sur {} </h4>
-        <h4><b>{}</b></h4>
-        '''.format(feature["properties"]["name"],x)
-        
+        try:
+            self.html1.value = '''
+            <h4> Valeur sur {} </h4>
+            <h4><b>{}</b></h4>
+            '''.format(feature["properties"]["name"],x)
+        except KeyError: 
+            self.html1.value = '''
+            <h4> Valeur sur {} </h4>
+            <h4><b>{}</b></h4>
+            '''.format(feature["properties"]["id"],x)
+            
     def change_step(self,change):
         self.step = change["new"]
         self.render()
@@ -223,14 +233,7 @@ class interactive_map(widg.HBox):
         self.geojson_layer.on_hover(self.update_html)
         legend_file.seek(0)
         self.legend.value =legend_file.read()
-        # Ajout du layer vectoriel 
-        #start debug 
-        #print(self.region_geo)
-        #print(self.da_aggregated.isel(step=self.step).to_pandas().to_dict())
-        #print(self.vmin)
-        #print(self.vmax)
-        #print(linear.RdBu_03)
-        #end debug
+    
         
         chor_layer = ipyl.Choropleth(geo_data=self.region_geo,
                                     choro_data=self.da_aggregated.isel(step=self.step).to_pandas().to_dict(),
@@ -297,7 +300,7 @@ class interactive_choro_map(interactive_map):
         import holoviews as hv
         if event == "click":
             self.id_i = properties["id"]
-            self.hist_name = properties["name"]
+            self.hist_name = properties.get("name",properties["id"])
             self.update_hist()
         
         

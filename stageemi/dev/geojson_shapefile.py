@@ -237,9 +237,10 @@ def define_color_bar_pixel_wwmf(cmap,colorbar_title,orientation="vertical",min_v
 
 def colorbar_definition_wwmf(N,name):
     """ name is a colormap name (eg viridis) and N is the number of code elements (eg 44 for WWMF)"""
-    
-    #file_CodesWWMF = '../utils/CodesWWMF.csv'
-    file_CodesWWMF = '/Users/gablellouch/Documents/Meteo_France/ENM/ienm2/emi/stageemi/stageemi/utils/CodesWWMF.csv'
+    dirname = os.path.dirname(__file__)
+    file_CodesWWMF = os.path.join(dirname, '../utils/CodesWWMF.csv')
+    #file_CodesWWMF  = '../utils/CodesWWMF.csv'
+    #file_CodesWWMF = '/Users/gablellouch/Documents/Meteo_France/ENM/ienm2/emi/stageemi/stageemi/utils/CodesWWMF.csv'
     df = pandas.read_csv(file_CodesWWMF,usecols = (0,1),sep=',')
     legende_WWMF = df['Legende WWMF'].to_numpy()
     code_WWMF    = df['Code WWMF'].to_numpy()
