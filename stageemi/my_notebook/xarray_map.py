@@ -131,10 +131,10 @@ class interactive_map(widg.HBox):
         fname_mask = '../GeoData/zones_sympo_multiples/'+self.dept+'_mask_zones_sympos.nc'
         da_mask = xr.open_dataarray(fname_mask)
         zs_l = [zs for zs in da_mask.id.values.tolist() if "+" not in zs]
-        zs_N = len(zs_l)
-        self.da_zone = da_mask.isel(id=slice(1,zs_N)).load()
-        #print(self.da_zone)
-        #end modif 
+        
+#        zs_N = len(zs_l)
+#        self.da_zone = da_mask.isel(id=slice(1,zs_N)).load()
+        self.da_zone = da_mask.sel(id=zs_l).load()
         
         self.da_zone["latitude"] = self.da_zone.latitude.round(5)
         self.da_zone["longitude"] = self.da_zone.longitude.round(5)
@@ -251,6 +251,8 @@ class interactive_map(widg.HBox):
             self.m.add_layer(chor_layer)
         self.chor_layer = chor_layer
         self.chor_layer.on_hover(self.update_chor_html)
+        
+        
         
 class interactive_choro_map(interactive_map): 
     def __init__(self,*args,**kwargs): 
