@@ -191,7 +191,8 @@ def check_existing_mask(mask_temp,ds_mask):
         else:
             flag = False
     return flag    
-def get_optimal_subzone_v2(ds_WME, groupe_mask_select,cible):
+
+def get_optimal_subzone_v2(ds_WME, groupe_mask_select,cible,ds_mask):
     """
         cible = valeur du temps sensible cible 
         groupe_mask_select = ensemble de masks qui vont être comparés à l'objet météo
@@ -477,20 +478,19 @@ def group_masks_size(listMasks,ds_mask):
         groupe 2: taille1 à taille2
         groupe 3: taille2 à taille du departement
     '''
-    taille_masks = ds_mask.sel(id=listMasks).mask.sum(["longitude","latitude"]) # /ds_mask.mask.sel(id=['mask']).sum()
-    taille1,taille2 = taille_masks.quantile([1/3,2/3])
+    taille_masks = ds_mask.mask.sum(["longitude","latitude"]).sel(id=listMasks).values
+    taille1,taille2 = np.quantile(taille_masks,[1/3,2/3])
 
-#     print(taille1.values,taille2.values)
-    ind1 = np.where( (taille_masks.values < taille1.values) & (taille_masks.values > 0))
+    ind1 = np.where( (taille_masks < taille1) & (taille_masks > 0))
     groupe1 = ds_mask.sel(id=listMasks).mask.isel(id=ind1[0])
 
-    ind2 = np.where((taille_masks.values >= taille1.values) & (taille_masks.values < taille2.values))
+    ind2 = np.where((taille_masks >= taille1) & (taille_masks < taille2))
     groupe2 = ds_mask.sel(id=listMasks).mask.isel(id=ind2[0])
 
-    ind3 = np.where((taille_masks.values >= taille2.values))
+    ind3 = np.where((taille_masks >= taille2))
     groupe3 = ds_mask.sel(id=listMasks).mask.isel(id=ind3[0])
 
-    return groupe1,groupe2,groupe3,taille1.values,taille2.values 
+    return groupe1,groupe2,groupe3,taille1,taille2 
 
 def get_not_included_masks(mask_temp, list_id,ds_mask,flag_strictly_included=True):
     '''

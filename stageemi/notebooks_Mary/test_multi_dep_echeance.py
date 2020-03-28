@@ -28,7 +28,6 @@ from lib import group_masks_size, get_optimal_subzone, select_group_mask, get_WM
 
 import stageemi
 import stageemi.dev.distance_wwmf as distance_wwmf
-
 '''
 input 
 '''
@@ -37,21 +36,32 @@ list_name = ['compas','agat','compas_asym','agat_asym'] # pour agreger le temps 
 
 mask_sympo = True
 mask_geographique = False
-dir_fig = 'C:\\Users\\mary\\Desktop\\stageemi\\figures\\zonage\\compas_compas_agat\\total\\'
+dir_fig = 'C:\\Users\\mary\\Desktop\\stageemi\\figures\\zonage\\total\\'
 
 # dep_id = '41'#'29'#'41' #'38'#
 # echeance = 4
 
 echeance_dict = {
-    '29':[32,39,20,33,13], 
-    '38':[44,12,3,46,43,25,30], 
+    '38':[44,12,3,46,43,25,30],
+    '29':[32,39,20,33,13],  
     '34':[1,5,6,4 ,10, 20,30], 
     '41':[45,4,44,5,20,30]
 }
 
+# echeance_dict = {
+# #     '29':[32,39,20,33,13], 
+#     '38':[44,12,3,46,43,25,30], 
+# #     '34':[1,5,6,4 ,10, 20,30], 
+#     '41':[45,4,44,5,20,30]
+# }
+# echeance_dict = {
+# #     '29':[32,39,20,33,13], 
+#     '38':[44]
+# }
+
 for dep_id in echeance_dict.keys():
     echeance_list = echeance_dict[dep_id]
-    print(dep_id)
+    print('dep_id',dep_id)
     ''' lecture du mask '''
     if mask_sympo and not mask_geographique: 
         t1 = time.time()
@@ -106,7 +116,7 @@ for dep_id in echeance_dict.keys():
         ds_distance         = distance_wwmf.get_pixel_distance_dept(ds_dep_tot,name)
         ds_distance_chunk   = ds_distance.chunk({"step":1}) 
         ds_distance_dict[name] = (ds_distance_chunk * ds_mask.mask).sum(['latitude',"longitude"]).compute()
-
+    print('fin calcul distance')
     ''' restreint la liste des WME pour le zonage '''
     var_name = 'wme_arr'
     for echeance in echeance_list: 
@@ -164,12 +174,12 @@ for dep_id in echeance_dict.keys():
                     #  on regroupe les masks selon leur taille
                     groupe1,groupe2,groupe3,taille1,taille2  = group_masks_size(listMasksNew,ds_mask)
                     # on selectionne le groupement de zones qui match l'objet météo
-                    groupe_mask_select = select_group_mask(ds_WME,cible,groupe1,groupe2,groupe3,taille1,taille2)
+                    groupe_mask_select = select_group_mask(ds_dep,cible,groupe1,groupe2,groupe3,taille1,taille2)
                 else: 
                     # on considère l'ensemble des masks
                     groupe_mask_select = ds_mask.mask.sel(id=listMasksNew)
                 # on selectionne la zone optimale (selon le hss et la précision)
-                zones_optimales,score_hss,score_precision=get_optimal_subzone_v2(ds_dep, groupe_mask_select,cible)
+                zones_optimales,score_hss,score_precision=get_optimal_subzone_v2(ds_dep, groupe_mask_select,cible,ds_mask)
                 print('zone optimales',zones_optimales,score_hss,score_precision)
         #         sys.exit()
                 if len(zones_optimales)==0:
@@ -267,4 +277,5 @@ for dep_id in echeance_dict.keys():
         plt.clf()
         plt.close('all')
         print('temps',time.time()-tdeb)
+#     print()
 
