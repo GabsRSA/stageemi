@@ -1,4 +1,5 @@
 import stageemi.dev.decorator_map as dm
+from stageemi.dev.distance_wwmf import conversion 
 import xarray as xr 
 import ipywidgets as widg 
 import ipyleaflet as ipyl
@@ -22,7 +23,7 @@ class interactive_map(widg.HBox):
         self._date = date_picker.value 
         date_picker.observe(self.change_date,"value")
         self.step = 0
-        variable_picker = widg.Dropdown(value="WWMF",options=["WWMF","PRECIP","T"])
+        variable_picker = widg.Dropdown(value="WWMF",options=["WWMF","WME","W1","PRECIP","T"])
         variable_picker.observe(self.variable_change,"value")
         dept_picker = widg.Dropdown(value="38",options={"Isère":"38","Hérault":"34","Loire-et-cher":"41"})
         dept_picker.observe(self.change_dept,"value")
@@ -124,18 +125,13 @@ class interactive_map(widg.HBox):
         """
         Retourne les zones du departement concernes
         """
-        #dir_zone = "/scratch/labia/lepapeb/geo_data/nc/StageEMI/ZONE_SYMPO/"
-        #l_file = os.listdir(dir_zone)
-        #l_dept = [dir_zone + x for x in l_file if (x.startswith(self.dept))]
-        #self.da_zone = xr.open_mfdataset(l_dept,combine="nested",concat_dim="id").load()["mask"] 
+
         
         #start modif read Mary zone sympos files
         fname_mask = '../GeoData/zones_sympo_multiples/'+self.dept+'_mask_zones_sympos.nc'
         da_mask = xr.open_dataarray(fname_mask)
         zs_l = [zs for zs in da_mask.id.values.tolist() if "+" not in zs]
         
-#        zs_N = len(zs_l)
-#        self.da_zone = da_mask.isel(id=slice(1,zs_N)).load()
         self.da_zone = da_mask.sel(id=zs_l).load()
         
         self.da_zone["latitude"] = self.da_zone.latitude.round(5)
@@ -160,12 +156,12 @@ class interactive_map(widg.HBox):
             
     def change_dept(self,change):
         self.dept = change["new"]
-        
+
     def change_date(self,change):
         self.date = change["new"]
         
     def open_file(self):
-        if self.variable == "WWMF":
+        if self.variable in ["WWMF","WME","W1"]:
             fname = "../WWMF/%s__PG0PAROME__WWMF__EURW1S100______GRILLE____0_48_1__SOL____GRIB2.nc"%self.date.strftime("%Y%m%d%H%M%S")
             self.vmin = 2
             self.vmax = 99
@@ -184,16 +180,35 @@ class interactive_map(widg.HBox):
             
         else: 
             raise(ValueError("Unknown variable"))
-        self.da = xr.open_dataarray(fname)
-        self.da['latitude'] = self.da.latitude.round(5)
-        self.da['longitude'] = self.da.longitude.round(5)
+
+        if self.variable in  ["WME","W1"]:
+            ds_temp = xr.open_dataset(fname,chunks={"step":1})
+            ds_temp["latitude"] = ds_temp.latitude.round(5)
+            ds_temp["longitude"] = ds_temp.longitude.round(5)
+            if self.variable == "WME":
+                ds_out = conversion(ds_temp,"compas")
+                self.da = ds_out["wme_arr"]
+            elif self.variable == "W1":
+                ds_out = conversion(ds_temp,"agat")
+                self.da = ds_out["w1_arr"]
+                
+            else:
+                raise(ValueError("Conversion not implemented")) 
+            
+                  
+        else: 
+            self.da = xr.open_dataarray(fname)
+            self.da['latitude'] = self.da.latitude.round(5)
+            self.da['longitude'] = self.da.longitude.round(5)
+           
+        
         if hasattr(self,"mask"):
              self.mask_da()
         if hasattr(self,"da_zone"):
             self.aggregate()
                 
     @dm.gogeojson_wwmf
-    def get_step(self):
+    def get_step(self,variable = "wwmf"):
         return self.da_masked.isel(step=self.step)
     
         
@@ -222,7 +237,7 @@ class interactive_map(widg.HBox):
         self.render()
         
     def render(self):
-        geo_file,legend_file = self.get_step()
+        geo_file,legend_file = self.get_step(variable= self.variable)
         geojson_layer = ipyl.GeoJSON(data=geo_file,hover_style={"opacity":1},name="AROME")
         if hasattr(self,"geojson_layer"):
             if self.geojson_layer in self.m.layers:

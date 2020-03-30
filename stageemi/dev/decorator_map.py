@@ -71,7 +71,7 @@ def gogeojson_wwmf(_func=None,varin="vartoplot",country_file=None,**deco):
     plot_options = {}
     plot_options["vmin"]= -1
     plot_options["vmax"]= 99
-    plot_options["bins"]=44
+    plot_options["bins"]= 44
     plot_options["type"]=deco.get("type","Pixel")
     plot_options["cmap"]=deco.get("cmap",cm.viridis)
     plot_options["save_colorbar"]=True
@@ -82,13 +82,14 @@ def gogeojson_wwmf(_func=None,varin="vartoplot",country_file=None,**deco):
         def wrapper(*args,**kwargs):
             legend_file = BytesIO()
             value = func(*args,**kwargs)
-            
+            variable= kwargs.get("variable",None)
+            print("In gogeojson variable is %s"%variable)
             if isinstance(value,xr.Dataset):
 #                 print("par ici")
                 if np.isnan(value[varin].values).all():
                     return None,None
                 else:
-                    geojson_str = return_geojson(value[varin], plot_options, legend_file, smoothing=False,simplify=0.001)
+                    geojson_str = return_geojson(value[varin], plot_options, legend_file,variable=variable)
             else: 
 #                 print("par la")
                 if np.isnan(value.values).all():
@@ -96,7 +97,7 @@ def gogeojson_wwmf(_func=None,varin="vartoplot",country_file=None,**deco):
                     return None,None
                 else:
 #                     print("par la, par la")
-                    geojson_str = return_geojson(value, plot_options, legend_file,smoothing=False,simplify=0.001)
+                    geojson_str = return_geojson(value, plot_options, legend_file,variable=variable)
             geojson_data = json.loads(geojson_str)
             if country_file is not None: 
                 crop_country(geojson_data,country_file=country_file)

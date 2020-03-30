@@ -64,7 +64,7 @@ def return_geojson(mat,opt,colorbar_title="colorbar.png",**kwargs):
         
     if type_leaf == "Pixel":
 #         print("et ici")
-        geof=return_geojson_pixel_wwmf(mat,opt,colorbar_title=colorbar_title)
+        geof=return_geojson_pixel_wwmf(mat,opt,colorbar_title=colorbar_title,**kwargs)
     elif type_leaf == "Contour": 
         geof=return_geojson_contour(mat,opt,colorbar_title=colorbar_title,**kwargs)
         
@@ -211,16 +211,12 @@ def define_color_bar_pixel_wwmf(cmap,colorbar_title,orientation="vertical",min_v
                 if "bins" in opt.keys(): 
 #                     print("est-ce qu on rentre la?")                    
                     N=opt['bins']
-                    code_WWMF, newcolors, newcolors_rgb = colorbar_definition_wwmf(N,'viridis')
-                    
-                    newcmp = ListedColormap(newcolors_rgb)                    
+                    newcmp = ListedColormap(opt["rgb_color"])                    
                     bounds=np.linspace(0,N,N+1)
                     ticks_new=bounds[:-1]+0.5 
-        
                     cb=mpl.colorbar.ColorbarBase(ax1,cmap=newcmp,boundaries=bounds,ticks=ticks_new)      
                     cb.ax.set_yticklabels(np.unique(opt["code_WWMF"]))
                     cb.ax.tick_params(labelsize=13)
-
                     if "units" in opt:
                         print("units?")
                         cb.ax.text(4,.5, "(in "+opt["units"]+")",
@@ -235,12 +231,13 @@ def define_color_bar_pixel_wwmf(cmap,colorbar_title,orientation="vertical",min_v
                     plt.savefig(colorbar_title)
                     plt.close()
 
-def colorbar_definition_wwmf(N,name):
+def colorbar_definition_wwmf(N,name,variable=None):
     """ name is a colormap name (eg viridis) and N is the number of code elements (eg 44 for WWMF)"""
     dirname = os.path.dirname(__file__)
     file_CodesWWMF = os.path.join(dirname, '../utils/CodesWWMF.csv')
-    #file_CodesWWMF  = '../utils/CodesWWMF.csv'
-    #file_CodesWWMF = '/Users/gablellouch/Documents/Meteo_France/ENM/ienm2/emi/stageemi/stageemi/utils/CodesWWMF.csv'
+    if variable is not None: 
+        print("We are in colorbar_definition for %s"%variable)
+
     df = pandas.read_csv(file_CodesWWMF,usecols = (0,1),sep=',')
     legende_WWMF = df['Legende WWMF'].to_numpy()
     code_WWMF    = df['Code WWMF'].to_numpy()
@@ -250,7 +247,7 @@ def colorbar_definition_wwmf(N,name):
         name='viridis'
     
     cmap=cm.get_cmap(name, N)
-    
+
     color_critic ={"15":"cyan","32":"gold","33":"orange","38":"darkorange","39":"olive","49":"tan","53":"pink","58":"purple",\
                    "59":"yellow","63":"fuchsia","70":"pink","73":"grey","77":"grey","78":"gray","80":"silver","83":"springgreen",\
                    "84":"lime","85":"limegreen","90":"red","97":"brown","98":"indianred","99":"black"}
@@ -263,7 +260,9 @@ def colorbar_definition_wwmf(N,name):
     for icode,code in enumerate(color_critic): 
         newcolors = newcolors.where(code_WWMF!=int(code),to_hex(color_critic[code]))
         newcolors_rgb[np.where(code_WWMF==int(code))[0][0]]=to_rgba(color_critic[code])
-                   
+        
+    print(newcolors) 
+    
     return code_WWMF, newcolors, newcolors_rgb
     
 
@@ -301,9 +300,14 @@ def return_geojson_pixel_wwmf(mat,opt=dict(),colorbar_title="colorbar.png",**kwa
         
         
     # Definition des couleurs 
-    code_WWMF, newcolors, newcolors_rgb = colorbar_definition_wwmf(N,'viridis')
+    print("In return_geojson_pixel_wwmf is %s"%kwargs.get("variable"))
+    if kwargs.get("variable") is not None: 
+        code_WWMF, newcolors, newcolors_rgb = colorbar_definition_wwmf(N,'viridis',variable=kwargs.get("variable"))
+    else: 
+        code_WWMF, newcolors, newcolors_rgb = colorbar_definition_wwmf(N,'viridis')
     
     opt["code_WWMF"]= code_WWMF
+    opt["rgb_color"] = newcolors_rgb
     
     colors=np.ndarray(np.shape(mat), dtype=str)
     colhex=xr.DataArray(colors)   
