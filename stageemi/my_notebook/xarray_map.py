@@ -24,7 +24,7 @@ class interactive_map(widg.HBox):
         self.step = 0
         variable_picker = widg.Dropdown(value="WWMF",options=["WWMF","PRECIP","T"])
         variable_picker.observe(self.variable_change,"value")
-        dept_picker = widg.Dropdown(value="38",options={"Isère":"38","Hérault":"34"})
+        dept_picker = widg.Dropdown(value="38",options={"Isère":"38","Hérault":"34","Loire-et-cher":"41"})
         dept_picker.observe(self.change_dept,"value")
         self.dept = dept_picker.value 
         self._variable = variable_picker.value
@@ -94,8 +94,10 @@ class interactive_map(widg.HBox):
     def get_mask(self):
         if self.dept == "38":
             da_mask = xr.open_dataarray("../GeoData/nc_departement/FRK24.nc")
-        #elif self.dept == "34":
-        #    da_mask = xr.open_dataarray("../GeoData/nc_departement/FRJ13.nc")
+        elif self.dept == "34":
+            da_mask = xr.open_dataarray("../GeoData/nc_departement/FRJ13.nc")
+        elif self.dept == "41":
+            da_mask = xr.open_dataarray("../GeoData/nc_departement/FRB05.nc")
         else: 
             raise(ValueError("Departement not known. Please add it"))
         da_mask["latitude"] = da_mask.latitude.round(5)
@@ -139,7 +141,7 @@ class interactive_map(widg.HBox):
         self.da_zone["latitude"] = self.da_zone.latitude.round(5)
         self.da_zone["longitude"] = self.da_zone.longitude.round(5)
         #zsympo = "../GeoData/ZonesSympo/zones_sympo_4326.json"
-        zsympo = "../GeoData/ZonesSympo/zones_sympo_38.json"
+        zsympo = "../GeoData/ZonesSympo/zones_sympo_"+self.dept+".json"
         
         with open(zsympo) as geojson1:
             poly_geojson = json.load(geojson1)
