@@ -83,7 +83,7 @@ def gogeojson_wwmf(_func=None,varin="vartoplot",country_file=None,**deco):
             legend_file = BytesIO()
             value = func(*args,**kwargs)
             variable= kwargs.get("variable",None)
-            print("In gogeojson variable is %s"%variable)
+            #print("In gogeojson variable is %s"%variable) # on s'assure que variable prend la bonne valeur: WWMF, WME ou W1
             if isinstance(value,xr.Dataset):
 #                 print("par ici")
                 if np.isnan(value[varin].values).all():
