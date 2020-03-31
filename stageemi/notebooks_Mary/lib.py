@@ -128,8 +128,8 @@ def find_neighbours(mask_ref,listMasks):
     
 def check_existing_mask_v2(mask_temp,ds_mask):
     '''
-        check if mask_ref already exists
-        return: flag (= True is mask_ref already exists in ds_mask)       
+        check if mask_temp already exists in ds_mask
+        return: flag (= True is mask_temp already exists in ds_mask)       
     '''
     list_str = ds_mask.id.values
     for id in list_str:
@@ -146,7 +146,7 @@ def check_existing_mask_v2(mask_temp,ds_mask):
 
 def create_new_mask(ds_mask, id_ref,listMasks):
     '''
-        on ajoute a ds_mask un mask egal a mask_ref + les masks voisins qui sont dans la liste des masks voisins listMasks
+        on ajoute à ds_mask un mask egal a mask_ref + les masks voisins qui sont dans la liste des masks voisins listMasks
     '''
     mask_ref = ds_mask.sel(id = id_ref).copy(deep=True)
     for  mask2compare in listMasks:
@@ -164,6 +164,189 @@ def create_new_mask(ds_mask, id_ref,listMasks):
             pass
     return ds_mask  
 
+
+def create_nc_mask_NSEO(dep_file,fname_mask_NSEO,plot_dep=False):
+    '''
+        fonction qui divise le mask (dep_file) en une vingtaine de sous-zones géographiques (nord,sud, nord  + est, etc...)
+        et sauvegarde ce nouveau mask en ncdf. 
+        in : 
+            - dep_file: fichier ncdf contenant le mask du département
+            - fname_mask_NSEO: fichier de sortie dans lequel seront stockés les nouveaux masks
+        out: le mask avec les sous-zones 
+        
+        !!! fonction à rendre plus claire !!! 
+    '''
+    ds_dep    = read_xarray(dep_file) 
+
+    lat1_3,lat2_3 = ds_dep["latitude"].quantile([1/3,2/3])
+    lon1_3,lon2_3 = ds_dep["longitude"].quantile([1/3,2/3]) 
+
+    ds_mask = ds_dep.copy().squeeze("id") # on va creer un dataset qui contient les masks N, S, E, O
+    latmin_dict = {'nord':float(lat2_3.values),'sud':ds_mask.latitude.values.min()
+                   ,'ouest':ds_mask.latitude.values.min(),'est':ds_mask.latitude.values.min()}
+
+    latmax_dict = {'nord':ds_mask.latitude.values.max(),'sud':float(lat1_3.values)
+                   ,'ouest':ds_mask.latitude.values.max(),'est':ds_mask.latitude.values.max()}
+
+    lonmin_dict = {'nord':ds_mask.longitude.values.min(),'sud':ds_mask.longitude.values.min()
+                   ,'ouest':ds_mask.longitude.values.min(),'est':float(lon2_3.values)}
+
+    lonmax_dict = {'nord':ds_mask.longitude.values.max(),'sud':ds_mask.longitude.values.max()
+                   ,'ouest':float(lon1_3.values),'est':ds_mask.longitude.values.max()}
+
+    # definition des masks centraux
+    for imask_id,mask_id in enumerate(['nord','sud','est','ouest']):
+        ds_mask[mask_id] = ds_mask.mask * 0
+        ind    = np.where((ds_mask.latitude>=latmin_dict[mask_id]) & (ds_mask.latitude<=latmax_dict[mask_id])
+                 & (ds_mask.longitude >= lonmin_dict[mask_id]) & (ds_mask.longitude<=lonmax_dict[mask_id]))
+        ds_mask[mask_id].values[ind] = 1
+        ds_mask[mask_id].values[np.isnan(ds_dep.squeeze("id").mask.values)] = np.nan
+
+    # definition des masks croises
+    for var1 in ['est','ouest']:
+        for var2 in ['nord','sud']: 
+            mask_id = var2 + '-'+var1
+            ds_mask[mask_id] = ds_mask[var1]* ds_mask[var2] # egal a 1 quand les deux valent 1, sinon 0
+
+    # definition du centre 
+    mask_id = 'centre'
+    ds_mask[mask_id] = ds_mask.mask.copy()
+    ds_mask[mask_id].values[(ds_mask.nord ==1 ) + (ds_mask.sud ==1 ) 
+                            + (ds_mask.est ==1 ) + (ds_mask.ouest ==1 )] = 0
+    # Nord + Est et Nord + ouest (idem pour sud)
+    for var1 in ['nord','sud']:
+        for var2 in ['est','ouest']: 
+            mask_id = var1 + '+'+var2
+            ds_mask[mask_id] = ds_mask[var1].copy()
+            ds_mask[mask_id].values[ds_mask[var2].values==1] = 1
+    # centre + nord (resp + sud, + est, + ouest)
+    for var in ['nord','sud','est','ouest']:
+        mask_id = 'centre+'+var
+        ds_mask[mask_id] = ds_mask['centre'].copy()
+        ds_mask[mask_id].values[ds_mask[var].values==1] = 1
+
+    # tout le mask sauf certaines zones ('tout sauf tata')
+    for var in ['nord','sud','est','ouest']:
+        mask_id = 'tout-'+var
+        ds_mask[mask_id] = ds_mask.mask.copy() - ds_mask[var].values
+
+    if plot_dep:
+        fig,axes = plt.subplots(nrows=5,ncols =4,figsize=(15,10))
+        ax = axes.flat
+        for imask_id,mask_id in enumerate(['nord','sud','est','ouest'                                      
+                                           ,'nord-est','sud-est','nord-ouest','sud-ouest'
+                                            ,'nord+est','sud+est','nord+ouest','sud+ouest'
+                                           ,'centre+est','centre+nord','centre+ouest','centre+sud'
+                                           ,'tout-est','tout-nord','tout-ouest','tout-sud'
+                                          ]): #['nord','sud','est','ouest']):
+            ds_mask[mask_id].plot.imshow(ax=ax[imask_id])
+            ax[imask_id].set_title(mask_id)
+        fig.tight_layout()
+
+    # save 
+    ds_out = xr.Dataset()
+    for i,keys in enumerate(ds_mask.data_vars):
+        ds_temp = ds_mask[keys].expand_dims("id").assign_coords(id=[keys]).rename("mask")
+        ds_out = xr.merge([ds_out,ds_temp])
+    ds_out.to_netcdf(fname_mask_NSEO)
+    return ds_out 
+
+
+
+def create_combination_subzones(dir_mask,dep_id,lst_subzones,fname_out,degre5=False):
+    '''
+    calcul et creation d'une multitude de combinaison de zones sympos. 
+    in:
+        - dir_mask: répertoire de là où sont stockés les fichiers des zones sympos
+        - dep_id: numéro du département (38 dans le cas de l'Isère)
+        - lst_subzones: liste de subzones de zones sympos dans le département 
+        - fname_out: fichier où sont stockés tous les différents masks
+        - degre5: si on veut des masks à 5 zones aussi 
+    '''
+    
+    ds_mask = xr.Dataset()
+    '''
+       1 - Mask du département: contient la somme des zones sympos
+    '''
+    for id in lst_subzones:
+        file_2 = dir_mask+id+'.nc' #.format(dep_id,n)   
+        ds_2   = read_xarray(file_2)
+        ds_2   = ds_2.reset_index("id",drop=True)# pour pouvoir les ajouter 
+        ds_mask = xr.merge([ds_mask,ds_2],join='outer')
+    ds_mask = ds_mask.assign_coords(id = ['departement'])
+    ds_mask.mask.attrs["name"] = 'combinaisons des zones sympos'
+
+    '''
+       2 - Mask de chaque zone sur le grand domaine 'departement' 
+    '''
+    for id in lst_subzones:
+        file_2 = dir_mask+ id + '.nc'  
+        ds_2   = read_xarray(file_2)
+        new_id = ds_2.id.values[0]
+        if new_id in ds_mask.id.values: 
+            continue
+        ds_3 = ds_2 *ds_mask.sel(id="departement") 
+        ds_3 = ds_3.assign_coords(id = [new_id]) 
+        ds_mask  = xr.concat([ds_mask,ds_3],dim = 'id')
+        del(ds_3,ds_2)
+        
+    '''
+       3 - Mask des somme des zones sympos voisines: return des mask du type 'zone1+zone3'
+    '''
+    lst_id_before3 = ds_mask.id.values
+    for id_ref in lst_subzones:
+        mask_ref = ds_mask.sel(id = id_ref).copy(deep=True)
+        listMasks = [ds_mask.sel(id = id) for id in lst_subzones]
+        list_neighbours = find_neighbours(mask_ref,listMasks)
+    #     on crée les nouveaux mask qui englobent mask_ref + voisin
+        listMasks = [ds_mask.sel(id = id) for id in list_neighbours]  
+        mask_ref = ds_mask.sel(id = id_ref).copy(deep=True)
+        ds_mask = create_new_mask(ds_mask, id_ref,listMasks)
+
+    '''
+       4 - somme entre chaque groupement de zones sympos: 
+       return des masks du type '(zone1 + zone3) + (zone4 + zone5)' ou '(zone1 + zone3) + (zone4 )'
+    '''
+    lst_int4 = np.copy(ds_mask.id.values)
+    lst_new_id4 = [key for key in lst_int4 if key not in lst_id_before3]
+
+    for id_ref in lst_int4: 
+        mask_ref = ds_mask.sel(id = id_ref).copy(deep=True) 
+        listMasks = [ds_mask.sel(id = id) for id in lst_int4]
+        list_neighbours = find_neighbours(mask_ref,listMasks)
+        if len(list_neighbours) == 0: 
+            continue
+        listMasks = [ds_mask.sel(id = id) for id in list_neighbours]  
+        mask_ref  = ds_mask.sel(id = id_ref).copy(deep=True)
+        ds_mask   = create_new_mask(ds_mask, id_ref,listMasks)
+  
+    '''
+        à voir si on veut continuer sur cette boucle ou pas
+    '''
+    if degre5:
+        lst_int5 = np.copy(ds_mask.id.values)
+        lst_new_id5 = [key for key in lst_int5 if key not in lst_int4]
+        for id_ref in lst_new_id5:  
+            mask_ref = ds_mask.sel(id = id_ref).copy(deep=True) 
+            listMasks = [ds_mask.sel(id = id) for id in lst_int5]
+            list_neighbours = find_neighbours(mask_ref,listMasks)
+            if len(list_neighbours) == 0: 
+                continue
+            listMasks = [ds_mask.sel(id = id) for id in list_neighbours]  
+            mask_ref  = ds_mask.sel(id = id_ref).copy(deep=True)
+            ds_mask   = create_new_mask(ds_mask, id_ref,listMasks)
+
+#     pour avoir des 0 en dehors de la sous-zone sur le departement 
+    for iid,id_ref in enumerate(ds_mask.id.values): 
+        ds_mask.mask[iid,:,:] = ds_mask.sel(id=id_ref).mask.where((ds_mask.sel(id=id_ref).mask.values==1) + (np.isnan(ds_mask.sel(id='departement').mask.values)),0)
+
+    ds_mask.to_netcdf(fname_out)
+    return ds_mask
+
+'''
+    Fonctions pour zoner un departement 
+'''
+
 def get_optimal_subzone_v2(ds_WME, groupe_mask_select,cible,ds_mask):
     """
         cible = valeur du temps sensible cible (par exemple code WME)
@@ -173,7 +356,7 @@ def get_optimal_subzone_v2(ds_WME, groupe_mask_select,cible,ds_mask):
     score_precision = np.zeros(len(groupe_mask_select))    
     score_hss       = np.zeros(len(groupe_mask_select)) 
     for imask,ds_mask_sub in enumerate(groupe_mask_select):    
-        # check if latitudes are aranged in the the same order
+        # check if latitudes are aranged in the the same way
         lat1 = ds_mask_sub.latitude.values
         lat2 = ds_WME.latitude.values
         if (np.sum(lat1==lat2) == lat1.size ): 
@@ -214,7 +397,7 @@ def get_optimal_subzone_v2(ds_WME, groupe_mask_select,cible,ds_mask):
             # si la fraction de l'événement est supérieure à 20% dans la zone, et si les hss des deux meilleures zones 
             # sont similaires
             best_zones = zones_optimales
-            # checker de l'inclusion de l'une ou l'autre des zones
+            # check de l'inclusion de l'une ou l'autre des zones
             list_neighbours = best_zones[::-1]
             list_ref        = best_zones 
             for iref in range(len(list_ref)):
@@ -238,197 +421,6 @@ def get_optimal_subzone_v2(ds_WME, groupe_mask_select,cible,ds_mask):
     return zones_optimales_f,hss_f,precision_f
 
 
-def create_nc_mask_NSEO(dep_file,fname_mask_NSEO,plot_dep=False):
-    '''
-        fonction qui divise le mask (dep_file) en une vingtaine de sous-zones géographiques (nord,sud, nord  + est, etc...)
-        et sauvegarde ce nouveau mask en ncdf. 
-        in : dep_file
-        out: le mask avec les sous-zones 
-        
-        !!! fonction à rendre plus claire !!! 
-    '''
-    ds_dep    = read_xarray(dep_file) 
-
-    lat1_3,lat2_3 = ds_dep["latitude"].quantile([1/3,2/3]) #,dim=["latitude"])
-    lon1_3,lon2_3 = ds_dep["longitude"].quantile([1/3,2/3]) #,dim=["latitude"])
-
-    ds_mask = ds_dep.copy().squeeze("id") # on va creer un dataset qui contient les masks N, S, E, O
-    latmin_dict = {'nord':float(lat2_3.values),'sud':ds_mask.latitude.values.min()
-                   ,'ouest':ds_mask.latitude.values.min(),'est':ds_mask.latitude.values.min()}
-
-    latmax_dict = {'nord':ds_mask.latitude.values.max(),'sud':float(lat1_3.values)
-                   ,'ouest':ds_mask.latitude.values.max(),'est':ds_mask.latitude.values.max()}
-
-    lonmin_dict = {'nord':ds_mask.longitude.values.min(),'sud':ds_mask.longitude.values.min()
-                   ,'ouest':ds_mask.longitude.values.min(),'est':float(lon2_3.values)}
-
-    lonmax_dict = {'nord':ds_mask.longitude.values.max(),'sud':ds_mask.longitude.values.max()
-                   ,'ouest':float(lon1_3.values),'est':ds_mask.longitude.values.max()}
-
-    # definition des masks centraux
-    for imask_id,mask_id in enumerate(['nord','sud','est','ouest']):
-        ds_mask[mask_id] = ds_mask.mask * 0
-        ind    = np.where((ds_mask.latitude>=latmin_dict[mask_id]) & (ds_mask.latitude<=latmax_dict[mask_id])
-                 & (ds_mask.longitude >= lonmin_dict[mask_id]) & (ds_mask.longitude<=lonmax_dict[mask_id]))
-        ds_mask[mask_id].values[ind] = 1
-        ds_mask[mask_id].values[np.isnan(ds_dep.squeeze("id").mask.values)] = np.nan
-
-    # definition des masks croises
-    for var1 in ['est','ouest']:
-        for var2 in ['nord','sud']: 
-            mask_id = var2 + '-'+var1
-            ds_mask[mask_id] = ds_mask[var1]* ds_mask[var2] # egal a 1 quand les deux valent 1 
-
-    # def du central 
-    mask_id = 'centre'
-    ds_mask[mask_id] = ds_mask.mask.copy()
-    ds_mask[mask_id].values[(ds_mask.nord ==1 ) + (ds_mask.sud ==1 ) 
-                            + (ds_mask.est ==1 ) + (ds_mask.ouest ==1 )] = 0
-    # Nord + Est et Nord + ouest (idem pour sud)
-    for var1 in ['nord','sud']:
-        for var2 in ['est','ouest']: 
-            mask_id = var1 + '+'+var2
-            ds_mask[mask_id] = ds_mask[var1].copy()
-            ds_mask[mask_id].values[ds_mask[var2].values==1] = 1
-    # centre + nord (resp + sud, + est, + ouest)
-    for var in ['nord','sud','est','ouest']:
-        mask_id = 'centre+'+var
-        ds_mask[mask_id] = ds_mask['centre'].copy()
-        ds_mask[mask_id].values[ds_mask[var].values==1] = 1
-
-    # tout le mask sauf certaines zones 
-    for var in ['nord','sud','est','ouest']:
-        mask_id = 'tout-'+var
-        ds_mask[mask_id] = ds_mask.mask.copy() - ds_mask[var].values
-    #     ds_mask[mask_id].values[ds_mask[var].values==1] = 1
-
-    if plot_dep:
-        fig,axes = plt.subplots(nrows=5,ncols =4,figsize=(15,10))
-        ax = axes.flat
-        for imask_id,mask_id in enumerate(['nord','sud','est','ouest'                                      
-                                           ,'nord-est','sud-est','nord-ouest','sud-ouest'
-                                            ,'nord+est','sud+est','nord+ouest','sud+ouest'
-                                           ,'centre+est','centre+nord','centre+ouest','centre+sud'
-                                           ,'tout-est','tout-nord','tout-ouest','tout-sud'
-                                          ]): #['nord','sud','est','ouest']):
-            ds_mask[mask_id].plot.imshow(ax=ax[imask_id])
-            ax[imask_id].set_title(mask_id)
-        fig.tight_layout()
-
-    # save 
-    ds_out = xr.Dataset()
-    for i,keys in enumerate(ds_mask.data_vars):
-        ds_temp = ds_mask[keys].expand_dims("id").assign_coords(id=[keys]).rename("mask")
-        ds_out = xr.merge([ds_out,ds_temp])
-    ds_out.to_netcdf(fname_mask_NSEO)
-    return ds_out 
-
-
-
-def create_combination_subzones(dir_mask,dep_id,lst_subzones,fname_out,degre5=False):
-    '''
-    calcul et creation d'une multitude de combinaison de zones sympos. 
-    in:
-        - dir_mask: répertoire de là où sont stocké les fichiers des zones sympos
-        - dep_id: numéro du département (38 dans le cas de l'Isère)
-        - lst_subzones: liste de subzones de zones sympos dans le département 
-        - fname_out: fichier où sont stockés tous les différents masks
-        - degre5: si on veut des masks à 5 zones aussi 
-    '''
-    
-    ds_mask = xr.Dataset()
-    '''
-       1 - Mask global: contient la somme des zones sympos
-    '''
-    for id in lst_subzones:
-    #for n in range(1,n_subzones+1):
-        file_2 = dir_mask+id+'.nc' #.format(dep_id,n)   
-        ds_2   = read_xarray(file_2)
-        ds_2 = ds_2.reset_index("id",drop=True)# pour pouvoir les ajouter 
-        ds_mask = xr.merge([ds_mask,ds_2],join='outer')
-    ds_mask = ds_mask.assign_coords(id = ['departement'])
-    ds_mask.mask.attrs["name"] = 'combinaisons des zones sympos'
-
-    '''
-       2 - Mask de chaque zone sur le grand domaine 'departement' 
-    '''
-#     for n in range(1,n_subzones+1):
-    for id in lst_subzones:
-        file_2 = dir_mask+ id + '.nc' #'{}{:02d}.nc'.format(dep_id,n)   
-        ds_2   = read_xarray(file_2)
-        new_id = ds_2.id.values[0]
-        if new_id in ds_mask.id.values: 
-            continue
-        ds_3 = ds_2 *ds_mask.sel(id="departement") 
-        ds_3 = ds_3.assign_coords(id = [new_id]) 
-#         ds_3 = ds_3.where((ds_3.mask.values==1) & (np.isnan(ds_mask.sel(id='departement').mask.values)),0)
-        ds_mask  = xr.concat([ds_mask,ds_3],dim = 'id')
-        del(ds_3,ds_2)
-        
-    '''
-       3 - Mask des somme des zones sympos voisines: return des mask du type 'zone1+zone3'
-    '''
-    lst_id_before3 = ds_mask.id.values
-    for id_ref in lst_subzones:
-        mask_ref = ds_mask.sel(id = id_ref).copy(deep=True)
-        # on recupère toutes les zones voisines à la zone ref
-        listMasks = [ds_mask.sel(id = id) for id in lst_subzones]
-
-        list_neighbours = find_neighbours(mask_ref,listMasks)
-    #     print("{} voisin avec {}".format(mask_ref.id.values,list_neighbours))
-    #     on crée les nouveaux mask qui englobent mask_ref + voisin
-        listMasks = [ds_mask.sel(id = id) for id in list_neighbours]  
-        mask_ref = ds_mask.sel(id = id_ref).copy(deep=True)
-        ds_mask = create_new_mask(ds_mask, id_ref,listMasks)
-
-    '''
-       4 - somme entre chaque groupement de zones sympos: 
-       return des masks du type '(zone1 + zone3) + (zone4 + zone5)' ou '(zone1 + zone3) + (zone4 )'
-    '''
-    lst_int4 = np.copy(ds_mask.id.values)
-    lst_new_id4 = [key for key in lst_int4 if key not in lst_id_before3]
-
-#     print(lst_new_id)
-    for id_ref in lst_int4: #lst_new_id: 
-        mask_ref = ds_mask.sel(id = id_ref).copy(deep=True) 
-        listMasks = [ds_mask.sel(id = id) for id in lst_int4]
-        list_neighbours = find_neighbours(mask_ref,listMasks)
-#         print("{} voisin avec {}".format(id_ref,list_neighbours))
-        if len(list_neighbours) == 0: 
-            continue
-        listMasks = [ds_mask.sel(id = id) for id in list_neighbours]  
-        mask_ref  = ds_mask.sel(id = id_ref).copy(deep=True)
-        ds_mask   = create_new_mask(ds_mask, id_ref,listMasks)
-  
-    '''
-        à voir si on veut continuer sur cette boucle ou pas
-    '''
-    if degre5:
-        lst_int5 = np.copy(ds_mask.id.values)
-        lst_new_id5 = [key for key in lst_int5 if key not in lst_int4]
-
-        for id_ref in lst_new_id5: #lst_new_id: 
-            mask_ref = ds_mask.sel(id = id_ref).copy(deep=True) 
-            listMasks = [ds_mask.sel(id = id) for id in lst_int5]
-            list_neighbours = find_neighbours(mask_ref,listMasks)
-    #         print("{} voisin avec {}".format(id_ref,list_neighbours))
-            if len(list_neighbours) == 0: 
-                continue
-            listMasks = [ds_mask.sel(id = id) for id in list_neighbours]  
-            mask_ref  = ds_mask.sel(id = id_ref).copy(deep=True)
-            ds_mask   = create_new_mask(ds_mask, id_ref,listMasks)
-#         print()
-#     pour avoir des 0 en dehors de la sous-zone sur le departement 
-    for iid,id_ref in enumerate(ds_mask.id.values): 
-        ds_mask.mask[iid,:,:] = ds_mask.sel(id=id_ref).mask.where((ds_mask.sel(id=id_ref).mask.values==1) + (np.isnan(ds_mask.sel(id='departement').mask.values)),0)
-
-    ds_mask.to_netcdf(fname_out)
-    return ds_mask
-
-
-'''
-    Fonctions pour zoner un departement 
-'''
 def get_WME_legend(file_CodesWWMF, ds):
     '''return: legend and WME code which are predicted in ds
     '''
@@ -444,7 +436,7 @@ def get_WME_legend(file_CodesWWMF, ds):
 
 def group_masks_size(listMasks,ds_mask):
     '''
-        on regroupe les différents masks selon leur taille en trois groupe. 
+        on regroupe les différents masks selon leur taille en trois groupes. 
         groupe 1: 0 à taille1
         groupe 2: taille1 à taille2
         groupe 3: taille2 à taille du departement
@@ -463,16 +455,30 @@ def group_masks_size(listMasks,ds_mask):
 
     return groupe1,groupe2,groupe3,taille1,taille2 
 
+def select_group_mask(ds_WME,cible,groupe1,groupe2,groupe3,taille1,taille2):
+    '''
+        selectionne le groupe de mask dont la taille match celle de l'objet météo définit par son code WME 
+        
+    '''
+    taille_objet_binaire = np.sum(ds_WME.wme_arr.values==cible)
+    if taille_objet_binaire < taille1 and taille_objet_binaire >0: 
+        groupe_mask_select = groupe1
+
+    elif taille_objet_binaire>=taille1 and taille_objet_binaire < taille2: 
+        groupe_mask_select = groupe2
+    else :
+        groupe_mask_select = groupe3
+    return groupe_mask_select 
+
 def get_not_included_masks(mask_temp, list_id,ds_mask,flag_strictly_included=True):
     '''
         return: ensemble des combinaisons de zones sans celles incluses dans mask_temp. 
         flag_strictly_included = True si on supprime seulement les zones qui sont incluses dans mask_temp 
                                = False si on supprime aussi les zones qui ont une zone sympo incluse dans mask_temp
-                                Ne peut pas être appliqué si les zones sympos sont placées de manière circulaire 
-                                (ex de l'hérault: si la première cible touche la zone 4 alors on supprime tout car la zone 4 touche toutes les autres zones)
+                              
     '''    
-    lst_mask_not_included = [] # not included in zone_temp
-    lst_mask_strict_included = [] # zones included in zone_temp
+    lst_mask_not_included = [] # not included in mask_temp
+    lst_mask_strict_included = [] # zones included in mask_temp
     for id in list_id:
         mask2compare = ds_mask.mask.sel(id = id)  
         somme = np.sum((mask_temp.values ==1) & (mask2compare.values==1)) 
@@ -480,7 +486,6 @@ def get_not_included_masks(mask_temp, list_id,ds_mask,flag_strictly_included=Tru
         taille1 = np.sum(mask_temp.values==1)
         if somme == taille2 :
             lst_mask_strict_included.append(id)
-#     print(len(list_id))
 
     lst_temp = []
     if not flag_strictly_included:
@@ -501,6 +506,7 @@ def get_optimal_subzone(ds_WME, groupe_mask_select,cible):
         cible = valeur du temps sensible cible 
         groupe_mask_select = ensemble de masks qui vont être comparés à l'objet météo
         ds_WME:xarray contenant les champs WME
+        return: zone qui minimise chaque score (hss, pod, far, f1, precision)
     """
     zones_optimales = {}    
     scores_zones_optimales = {}    
@@ -516,7 +522,6 @@ def get_optimal_subzone(ds_WME, groupe_mask_select,cible):
         lat2 = ds_WME.latitude.values
         if (np.sum(lat1==lat2) == lat1.size ): 
             # same order 
-    #         print("same order")
             y_true = ds_WME.wme_arr.copy()
         elif (np.sum(lat1[::-1]==lat2)== lat1.size):
     #         print('reverse order ')
@@ -561,104 +566,5 @@ def get_optimal_subzone(ds_WME, groupe_mask_select,cible):
     return zones_optimales,scores_zones_optimales
 
 
-def select_group_mask(ds_WME,cible,groupe1,groupe2,groupe3,taille1,taille2):
-    '''
-        selectionne le groupe de mask dont la taille match celle de l'objet météo définit par son code WME 
-        
-    '''
-    taille_objet_binaire = np.sum(ds_WME.wme_arr.values==cible)
-    #     print('taille objet binaire ', taille_objet_binaire)
-    if taille_objet_binaire < taille1 and taille_objet_binaire >0: # groupe 1 de masks
-        print('objet dans groupe 1')
-        groupe_mask_select = groupe1
 
-    elif taille_objet_binaire>=taille1 and taille_objet_binaire < taille2: # groupe 2 de mask
-        print('objet dans groupe 2')
-        groupe_mask_select = groupe2
-    else :
-        # On parcourt la liste de mask, calcul dun critere d'homogeneite dans le groupe 
-        print('objet dans groupe 3')
-        groupe_mask_select = groupe3
-    return groupe_mask_select 
 
-'''
-    agregation 
-'''
-def distance(ds,name,**options):
-    """calculate the distance between all possible temps sensibles (wme) and the temps sensibles of the zone"""
-    
-    if name == "compas":
-        fname_dist = '../utils/distance_compas.csv'
-        df_dist = pandas.read_csv(fname_dist,sep=',')
-        var_name="wme_arr"
-        varsh="wme_c_"
-        
-    elif name == "agat":
-        fname_dist = '../utils/distance_agat.csv'
-        df_dist = pandas.read_csv(fname_dist,sep=',')  
-        var_name="w1_arr"
-        varsh="w1_c_"
-        
-    elif name == "compas_asym":
-        fname_dist = '../utils/distance_compas_asym.csv'
-        df_dist = pandas.read_csv(fname_dist,sep=',')
-        var_name="wme_asym_arr"
-        varsh="wme_asym_c_"
-        
-    elif name == "agat_asym":
-        fname_dist = '../utils/distance_agat_asym.csv'
-        df_dist = pandas.read_csv(fname_dist,sep=',')  
-        var_name="w1_asym_arr"
-        varsh="w1_asym_c_" 
-        
-    if options.get("action") == "test":
-        """used to test over few pixels only in debug mode"""
-        for iwme,wme in enumerate(df_dist):
-            if iwme>0 and iwme<5:
-                # initialize ds["1"] etc
-                ds[wme]=ds.wme_arr
-                for iiwme,wwme in enumerate(df_dist):
-                    if iiwme>0:
-                        #print(wme,wwme,iiwme,iwme)
-                        #print(df_dist.iloc[iiwme-1,iwme])
-                        # for a given wme (e.g. "1") every value in ds["1"] is replaced by the ditance btw wme and wwme
-                        ds[wme]=ds[wme].where(ds.wme_arr!=int(wwme),df_dist.iloc[iiwme-1,iwme])  
-                        
-    else:
-        for iw,w in enumerate(df_dist): 
-            if iw>0:
-                ds[varsh+w]=ds.wme_arr
-                for iiw,ww in enumerate(df_dist):
-                    if iiw>0:
-                        ds[varsh+w]=ds[varsh+w].where(ds[var_name]!=int(ww),df_dist.iloc[iiw-1,iw])       
-                    
-    return ds  
-
-def shortest_distance_temps_sensible_Mary(ds,name):
-    '''
-        modification de la fonction de Gabriel pour l'avoir à une échéance fixe
-    '''   
-    if name=="compas": 
-        varsh="wme_c_"
-    elif name=="agat": 
-        varsh="w1_c_"    
-    elif name=="compas_asym": 
-        varsh="wme_asym_c_"
-    elif name=="agat_asym": 
-        varsh="w1_asym_c_"
-
-    """find all newly added variables linked to wme or w1 resulting from the distance calulation"""
-    allvar=list(ds.data_vars)
-    list_w=[allvar[i] for i in np.where([varsh in s for s in allvar])[0]]
-    ncodes=len(list_w)
-    dist_w=np.asarray(np.ones((1,ncodes))*np.nan) 
-    # shortest_distance_temps_sensible(ds,'compas')
-
-    best_w=list_w[np.asarray([np.sum(ds[w]) for iw,w in enumerate(list_w)]).argmin()][len(varsh)::]
-    ds.attrs[name]=best_w
-    return ds
-
-def calculate_distance(ds,name):
-    ds=distance(ds,name)
-    ds=shortest_distance_temps_sensible_Mary(ds,name)
-    return ds
