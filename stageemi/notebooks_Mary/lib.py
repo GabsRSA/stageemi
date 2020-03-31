@@ -14,9 +14,6 @@ import xarray as xr
 import pandas
 import sklearn.metrics
 
-def get_index(data,val):
-    return np.argmin(np.abs(data-val))
-
 def read_xarray(file): 
     data = xr.open_dataset(file)
     data["latitude"]  = data["latitude"].round(5)
@@ -61,9 +58,7 @@ def conversion(ds,name):
     https://www.nws.noaa.gov/oh/rfcdev/docs/Glossary_Verification_Metrics.pdf
 '''
 def hss(y_true, y_pred): 
-    '''
-        Heidke Skill Score 
-    '''    
+    ''' Heidke Skill Score '''    
     tn, fp, fn, tp = sklearn.metrics.confusion_matrix(y_true,y_pred).ravel()
     
     if (fp+fn)*(tn+fp+fn+tp)+2*(tn*tp-fp*fn)>0:
@@ -72,9 +67,7 @@ def hss(y_true, y_pred):
         return np.nan 
 
 def f1(y_true, y_pred):
-    '''
-        f1 score
-    '''
+    ''' f1 score '''
     tn, fp, fn, tp = sklearn.metrics.confusion_matrix(y_true,y_pred).ravel()
     if (fp+tp) >0 and (tp+fn) >0: 
         precision = tp /(fp + tp)
@@ -84,7 +77,7 @@ def f1(y_true, y_pred):
         return np.nan
     
 def pod(y_true,y_pred) : 
-    # probability of detection
+    ''' pod score '''
     tn, fp, fn, tp = sklearn.metrics.confusion_matrix(y_true,y_pred).ravel()
     if (tp+fn >0):
         return tp/(tp+fn)
@@ -92,7 +85,7 @@ def pod(y_true,y_pred) :
         return np.nan
     
 def far(y_true,y_pred): 
-    # false alarm ratio: the number  of false alarms divided by the total number of events forecast
+    ''' false alarm ratio: the number  of false alarms divided by the total number of events forecast '''
     tn, fp, fn, tp = sklearn.metrics.confusion_matrix(y_true,y_pred).ravel()
     if (fp+tp>0):
         return fp/(fp+tp)
@@ -100,9 +93,7 @@ def far(y_true,y_pred):
         return np.nan
     
 def pofd(y_true, y_pred): 
-    '''
-        Prob of False Detection (false alarm/ total number of event observed)
-    '''
+    ''' Prob of False Detection (false alarm divided by total number of event observed) '''
     tn, fp, fn, tp = sklearn.metrics.confusion_matrix(y_true,y_pred).ravel()
     if (fp + tn)>0:
         return fp/(fp + tn)
@@ -117,20 +108,17 @@ def precision(y_true,y_pred):
         return np.nan
         
 '''
-    fonctions qui permettent de comparer plusieurs mask et de créer des combinaisons de zones sympos
+    fonctions qui permettent de comparer plusieurs masks et de créer des combinaisons de zones sympos
 '''
 def find_neighbours(mask_ref,listMasks): 
-    '''
-        permet de chercher les zones voisines à mask_ref
-        taille1 et taille2 permettent de checker si un des deux masks n'est pas déjà inclu dans un autre
-    '''
+    '''  return: liste contenant les id des zones voisines à la zone définit par mask_ref '''
     lst_neighbours = []
     for  mask2compare in listMasks:
         if mask_ref.identical(mask2compare): 
-#             print("identical")
             continue 
         else: 
             somme          = np.sum((mask_ref.mask.values == 1) & (mask2compare.mask.values == 1))
+            # tailleRef et taille2compare permettent de checker si un des deux masks n'est pas déjà inclu dans l'autre
             tailleRef      = np.sum(~np.isnan(mask_ref.mask.values ))
             taille2compare = np.sum(~np.isnan(mask2compare.mask.values ))
             if somme > 0 and somme!=tailleRef and somme!=taille2compare: 
@@ -140,8 +128,8 @@ def find_neighbours(mask_ref,listMasks):
     
 def check_existing_mask_v2(mask_temp,ds_mask):
     '''
-        check if mask_ref is already in the xarray 
-        return flag (= True is mask_ref already exists in ds_mask)       
+        check if mask_ref already exists
+        return: flag (= True is mask_ref already exists in ds_mask)       
     '''
     list_str = ds_mask.id.values
     for id in list_str:
@@ -158,7 +146,7 @@ def check_existing_mask_v2(mask_temp,ds_mask):
 
 def create_new_mask(ds_mask, id_ref,listMasks):
     '''
-        on ajoute a ds_mask un mask egal a mask_ref + les masks voisins dans la liste des masks voisins listMasks
+        on ajoute a ds_mask un mask egal a mask_ref + les masks voisins qui sont dans la liste des masks voisins listMasks
     '''
     mask_ref = ds_mask.sel(id = id_ref).copy(deep=True)
     for  mask2compare in listMasks:
@@ -167,54 +155,38 @@ def create_new_mask(ds_mask, id_ref,listMasks):
         ds_temp = mask_ref.copy(deep=True)
         ind = np.where((mask_ref.mask == 1 ) + (mask2compare.mask == 1))
         ds_temp.mask.values[ind] = 1
-        flag = check_existing_mask_v2(ds_temp.mask, ds_mask) # check if mask already exists
+        flag = check_existing_mask_v2(ds_temp.mask, ds_mask) 
         if (not flag) and (new_id not in ds_mask.id.values): 
+            # check if mask already exists
             ds_temp = ds_temp.assign_coords(id =[new_id]) 
             ds_mask  = xr.concat([ds_mask,ds_temp],dim = 'id')
         else: 
             pass
-    return ds_mask
-
-def check_existing_mask(mask_temp,ds_mask):
-    '''
-        check if mask_ref is already in the xarray 
-        return flag (= True is mask_ref exists)       
-    '''
-#     print(listMasks)
-    list_str = ds_mask.id.values
-    for id in list_str:
-        mask2compare = ds_mask.mask.sel(id = id)      
-#         ds_diff = mask2compare.values - mask_ref.values 
-        if mask_temp.equals(mask2compare):
-            flag = True
-            break
-        else:
-            flag = False
-    return flag    
+    return ds_mask  
 
 def get_optimal_subzone_v2(ds_WME, groupe_mask_select,cible,ds_mask):
     """
-        cible = valeur du temps sensible cible 
+        cible = valeur du temps sensible cible (par exemple code WME)
         groupe_mask_select = ensemble de masks qui vont être comparés à l'objet météo
         ds_WME:xarray contenant les champs WME
     """
     score_precision = np.zeros(len(groupe_mask_select))    
     score_hss       = np.zeros(len(groupe_mask_select)) 
     for imask,ds_mask_sub in enumerate(groupe_mask_select):    
-        # check si les latitudes sont selon le même ordre
+        # check if latitudes are aranged in the the same order
         lat1 = ds_mask_sub.latitude.values
         lat2 = ds_WME.latitude.values
         if (np.sum(lat1==lat2) == lat1.size ): 
             # same order 
-#             print("same order")
             y_true = ds_WME.wme_arr.copy()
         elif (np.sum(lat1[::-1]==lat2)== lat1.size):
-#             print('reverse order ')
+            # reverse order
             y_true = ds_WME.wme_arr[::-1,:].copy()
         else: 
             print("pb sur lon/lat")
             break
         y_pred = ds_mask_sub.copy() 
+        # binarise
         y_true = y_true.where(~((y_true.values!=cible) & (~np.isnan(y_true.values))),0)#ds_dep.wme_arr.copy()
         y_true = y_true.where(~(y_true.values == cible), 1)
         y_true_score = y_true.values[~np.isnan(y_true.values)]
@@ -224,15 +196,13 @@ def get_optimal_subzone_v2(ds_WME, groupe_mask_select,cible,ds_mask):
         score_hss[imask]       = hss(y_true_score,y_pred_score)
         
     ind_nan = np.where((~np.isnan(score_hss))*(score_hss>0))
-    
+    # car si hss <0, alors le hasard fait mieux les choses
     if np.size(ind_nan[0])== 0 :
         # signifie qu'il y a aucune zone qui représente bien la cible
         print('pas de zones homogène pour {}'.format(cible))
         zones_optimales_f,hss_f,precision_f = [],[],[] 
     elif np.size(ind_nan[0])== 1 : 
         # une seule zone possible
-        print(ind_nan)
-        print('une seule zone possible pour {}'.format(cible))
         zones_optimales_f = [groupe_mask_select.id.values[ind_nan][0]]
         hss_f             = [score_hss[ind_nan][0]]
         precision_f       = [score_precision[ind_nan][0]]
@@ -266,6 +236,7 @@ def get_optimal_subzone_v2(ds_WME, groupe_mask_select,cible,ds_mask):
             hss_f             = [score_hss[ind_nan][indice][0]]
             precision_f       = [score_precision[ind_nan][indice][0]]
     return zones_optimales_f,hss_f,precision_f
+
 
 def create_nc_mask_NSEO(dep_file,fname_mask_NSEO,plot_dep=False):
     '''
