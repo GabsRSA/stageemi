@@ -164,7 +164,6 @@ def create_new_mask(ds_mask, id_ref,listMasks):
             pass
     return ds_mask  
 
-
 def create_nc_mask_NSEO(dep_file,fname_mask_NSEO,plot_dep=False):
     '''
         fonction qui divise le mask (dep_file) en une vingtaine de sous-zones géographiques (nord,sud, nord  + est, etc...)
@@ -181,7 +180,7 @@ def create_nc_mask_NSEO(dep_file,fname_mask_NSEO,plot_dep=False):
     lat1_3,lat2_3 = ds_dep["latitude"].quantile([1/3,2/3])
     lon1_3,lon2_3 = ds_dep["longitude"].quantile([1/3,2/3]) 
 
-    ds_mask = ds_dep.copy().squeeze("id") # on va creer un dataset qui contient les masks N, S, E, O
+    ds_mask = ds_dep.copy().squeeze("id") # création d'un dataset contenant les masks N, S, E, O
     latmin_dict = {'nord':float(lat2_3.values),'sud':ds_mask.latitude.values.min()
                    ,'ouest':ds_mask.latitude.values.min(),'est':ds_mask.latitude.values.min()}
 
@@ -231,6 +230,7 @@ def create_nc_mask_NSEO(dep_file,fname_mask_NSEO,plot_dep=False):
         ds_mask[mask_id] = ds_mask.mask.copy() - ds_mask[var].values
 
     if plot_dep:
+        import matplotlib.pyplot as plt
         fig,axes = plt.subplots(nrows=5,ncols =4,figsize=(15,10))
         ax = axes.flat
         for imask_id,mask_id in enumerate(['nord','sud','est','ouest'                                      
@@ -238,7 +238,7 @@ def create_nc_mask_NSEO(dep_file,fname_mask_NSEO,plot_dep=False):
                                             ,'nord+est','sud+est','nord+ouest','sud+ouest'
                                            ,'centre+est','centre+nord','centre+ouest','centre+sud'
                                            ,'tout-est','tout-nord','tout-ouest','tout-sud'
-                                          ]): #['nord','sud','est','ouest']):
+                                          ]): 
             ds_mask[mask_id].plot.imshow(ax=ax[imask_id])
             ax[imask_id].set_title(mask_id)
         fig.tight_layout()
@@ -248,8 +248,10 @@ def create_nc_mask_NSEO(dep_file,fname_mask_NSEO,plot_dep=False):
     for i,keys in enumerate(ds_mask.data_vars):
         ds_temp = ds_mask[keys].expand_dims("id").assign_coords(id=[keys]).rename("mask")
         ds_out = xr.merge([ds_out,ds_temp])
+    ds_out.id.values[ds_out.id.values=='mask'] = 'departement'
     ds_out.to_netcdf(fname_mask_NSEO)
     return ds_out 
+
 
 
 
@@ -470,12 +472,43 @@ def select_group_mask(ds_WME,cible,groupe1,groupe2,groupe3,taille1,taille2):
         groupe_mask_select = groupe3
     return groupe_mask_select 
 
+def get_not_included_masks_geo(mask_temp, list_id,ds_mask,flag_strictly_included=True):
+    '''
+        return: ensemble des combinaisons de zones sans celles incluses dans mask_temp. 
+        flag_strictly_included = True si on supprime seulement les zones qui sont incluses dans mask_temp 
+                               = False si on supprime aussi les zones qui ont une zone sympo incluse dans mask_temp
+        à vérifier
+                              
+    '''    
+    lst_mask_not_included = [] # not included in mask_temp
+    lst_mask_strict_included = [] # zones included in mask_temp
+    for id in list_id:
+        mask2compare = ds_mask.mask.sel(id = id)  
+        somme = np.sum((mask_temp.values ==1) & (mask2compare.values==1)) 
+        taille2 = np.sum(mask2compare.values==1)
+        taille1 = np.sum(mask_temp.values==1)
+        if somme == taille2 :
+            lst_mask_strict_included.append(id)
+
+    lst_temp = []
+    if not flag_strictly_included:
+        for zone in list_id:
+            for zone_included in lst_mask_strict_included:
+                somme = np.sum((ds_mask.mask.sel(id=zone).values == 1) & (ds_mask.mask.sel(id=zone_included).values == 1))
+                if somme>0:
+                    lst_temp.append(zone)
+        lst_mask_not_included_final = [element for element in list_id if element not in lst_temp]            
+    else: 
+        lst_mask_not_included_final = [element for element in list_id if element not in lst_mask_strict_included]  
+    return lst_mask_not_included_final,  lst_mask_strict_included
+
+
 def get_not_included_masks(mask_temp, list_id,ds_mask,flag_strictly_included=True):
     '''
         return: ensemble des combinaisons de zones sans celles incluses dans mask_temp. 
         flag_strictly_included = True si on supprime seulement les zones qui sont incluses dans mask_temp 
                                = False si on supprime aussi les zones qui ont une zone sympo incluse dans mask_temp
-                              
+        check par les noms des id et non pas par les inclusions de 1  
     '''    
     lst_mask_not_included = [] # not included in mask_temp
     lst_mask_strict_included = [] # zones included in mask_temp

@@ -1,0 +1,477 @@
+dep_id 38
+0.6556129455566406
+C:\Users\mary\anaconda3\envs\preproc\lib\site-packages\dask\array\core.py:3901: PerformanceWarning: Increasing number of chunks by factor of 48
+  result = blockwise(
+C:\Users\mary\anaconda3\envs\preproc\lib\site-packages\dask\array\core.py:3901: PerformanceWarning: Increasing number of chunks by factor of 48
+  result = blockwise(
+C:\Users\mary\anaconda3\envs\preproc\lib\site-packages\dask\array\core.py:3901: PerformanceWarning: Increasing number of chunks by factor of 48
+  result = blockwise(
+C:\Users\mary\anaconda3\envs\preproc\lib\site-packages\dask\array\core.py:3901: PerformanceWarning: Increasing number of chunks by factor of 48
+  result = blockwise(
+fin calcul distance
+44
+[ 2.  4.  8. 10. 14.] ['Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Neige', 'Averses']
+objet dans groupe 1
+zone optimales ['3805+3806+3808'] [0.22138223926269565] [0.28820729772607084]
+zone optimales ['3801+3802'] [0.6469550224094083] [0.5423280423280423]
+3801+3802
+zone optimales ['3803+3804+3807'] [0.31307266890071006] [0.6166666666666667]
+3803+3804+3807
+pas de zones homogène pour 4.0
+zone optimales [] [] []
+pas de zones homogène pour 2.0
+zone optimales [] [] []
+toutes les zones sont bien décrites
+{14.0: ['3805+3806+3808'], 10.0: ['3801+3802'], 8.0: ['3803+3804+3807']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_382020012600_44.png
+temps 131.53207325935364
+12
+[ 2.  4.  8. 10. 14.] ['Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Neige', 'Averses']
+objet dans groupe 1
+zone optimales ['3801+3802+3804+3805'] [0.2638008616708393] [0.2715123859191656]
+zone optimales ['3806'] [0.16303314102675884] [0.20126582278481012]
+3806
+zone optimales ['3803', '3808'] [0.25805609145602, 0.2067689278532661] [0.8467065868263473, 0.8770226537216829]
+3803
+3808
+pas de zones homogène pour 4.0
+zone optimales [] [] []
+(array([0], dtype=int64),)
+une seule zone possible pour 2.0
+zone optimales ['3807'] [0.8099286590796807] [0.8974550898203593]
+3807
+toutes les zones sont bien décrites
+{14.0: ['3801+3802+3804+3805'], 10.0: ['3806'], 8.0: ['3803', '3808'], 2.0: ['3807']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_382020012600_12.png
+temps 105.48268389701843
+3
+[ 2.  4.  8. 10. 14.] ['Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Neige', 'Averses']
+objet dans groupe 1
+zone optimales ['3801+3802'] [0.2132668015461698] [0.2052910052910053]
+zone optimales ['3806'] [0.18632189717842695] [0.27848101265822783]
+3806
+zone optimales ['3803+3804+3805+3808'] [0.603521008898338] [0.7370203160270881]
+3803+3804+3805+3808
+pas de zones homogène pour 4.0
+zone optimales [] [] []
+(array([0], dtype=int64),)
+une seule zone possible pour 2.0
+zone optimales ['3807'] [0.6695910066380047] [0.8834830339321357]
+3807
+toutes les zones sont bien décrites
+{14.0: ['3801+3802'], 10.0: ['3806'], 8.0: ['3803+3804+3805+3808'], 2.0: ['3807']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_382020012600_3.png
+temps 190.93703818321228
+46
+[ 1.  2.  4.  8. 10. 14.] ['Clair/Peu nuageux', 'Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Neige', 'Averses']
+objet dans groupe 1
+zone optimales ['3805'] [0.2975585978862614] [0.2]
+objet dans groupe 1
+zone optimales ['3801+3802'] [0.7497231629968027] [0.7243386243386244]
+3801+3802
+zone optimales ['3803+3804'] [0.5901448503685226] [0.6980292434837889]
+3803+3804
+zone optimales ['3806'] [0.2512712087122092] [0.1949367088607595]
+3806
+zone optimales ['3807+3808'] [0.7813438435584641] [0.9790986283474853]
+3807+3808
+pas de zones homogène pour 1.0
+zone optimales [] [] []
+toutes les zones sont bien décrites
+{14.0: ['3805'], 10.0: ['3801+3802'], 8.0: ['3803+3804'], 4.0: ['3806'], 2.0: ['3807+3808']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_382020012600_46.png
+temps 164.73395156860352
+43
+[ 2.  4.  8. 14.] ['Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Averses']
+objet dans groupe 1
+zone optimales ['3801+3802'] [0.44305511254845725] [0.362962962962963]
+zone optimales ['3805+3807'] [0.34389926998347203] [0.34126278345931527]
+3805+3807
+zone optimales ['3808'] [0.16314634385003565] [0.1715210355987055]
+3808
+zone optimales ['3803+3804+3806'] [0.24272759767359176] [0.9896373056994818]
+3803+3804+3806
+toutes les zones sont bien décrites
+{14.0: ['3801+3802'], 8.0: ['3805+3807'], 4.0: ['3808'], 2.0: ['3803+3804+3806']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_382020012600_43.png
+temps 173.7102861404419
+25
+[1. 2. 4.] ['Clair/Peu nuageux', 'Nuageux', 'Brume/Brouillard/Grisaille']
+objet dans groupe 1
+zone optimales ['3808'] [0.10962305886431552] [0.14563106796116504]
+objet dans groupe 3
+zone optimales ['3801+3802+3803+3804+3806+3805+3807'] [0.09384930647701935] [0.9411559888579387]
+3801+3802+3803+3804+3806+3805+3807
+pas de zones homogène pour 1.0
+zone optimales [] [] []
+toutes les zones sont bien décrites
+{4.0: ['3808'], 2.0: ['3801+3802+3803+3804+3806+3805+3807']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_382020012600_25.png
+temps 113.81282496452332
+30
+[1. 2. 4.] ['Clair/Peu nuageux', 'Nuageux', 'Brume/Brouillard/Grisaille']
+objet dans groupe 1
+(array([6], dtype=int64),)
+une seule zone possible pour 4.0
+zone optimales ['3808'] [0.03335611741855953] [0.10679611650485436]
+objet dans groupe 3
+zone optimales ['3801+3802+3803+3804+3806+3805+3807'] [0.029978853884810027] [0.9189879294336118]
+3801+3802+3803+3804+3806+3805+3807
+pas de zones homogène pour 1.0
+zone optimales [] [] []
+toutes les zones sont bien décrites
+{4.0: ['3808'], 2.0: ['3801+3802+3803+3804+3806+3805+3807']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_382020012600_30.png
+temps 112.41839361190796
+dep_id 29
+0.35346126556396484
+C:\Users\mary\anaconda3\envs\preproc\lib\site-packages\dask\array\core.py:3901: PerformanceWarning: Increasing number of chunks by factor of 48
+  result = blockwise(
+C:\Users\mary\anaconda3\envs\preproc\lib\site-packages\dask\array\core.py:3901: PerformanceWarning: Increasing number of chunks by factor of 48
+  result = blockwise(
+C:\Users\mary\anaconda3\envs\preproc\lib\site-packages\dask\array\core.py:3901: PerformanceWarning: Increasing number of chunks by factor of 48
+  result = blockwise(
+C:\Users\mary\anaconda3\envs\preproc\lib\site-packages\dask\array\core.py:3901: PerformanceWarning: Increasing number of chunks by factor of 48
+  result = blockwise(
+fin calcul distance
+32
+[ 2.  4.  8. 14. 18.] ['Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Averses', 'Orages']
+objet dans groupe 1
+zone optimales ['2902'] [0.28762517848314706] [0.24591121495327103]
+objet dans groupe 2
+zone optimales ['2901+2903+2907+2981+2982'] [0.19622469226309502] [0.5146217418944692]
+2901+2903+2907+2981+2982
+zone optimales ['2904+2905+2906'] [0.13029354260573384] [0.3140625]
+2904+2905+2906
+pas de zones homogène pour 4.0
+zone optimales [] [] []
+zone optimales ['2908+2983'] [0.247760951829936] [0.6385240775484677]
+2908+2983
+toutes les zones sont bien décrites
+{18.0: ['2902'], 14.0: ['2901+2903+2907+2981+2982'], 8.0: ['2904+2905+2906'], 2.0: ['2908+2983']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_292020012600_32.png
+temps 630.9386401176453
+39
+[ 2.  8.  9. 14. 18.] ['Nuageux', 'Pluie', 'Pluie abondante', 'Averses', 'Orages']
+objet dans groupe 1
+zone optimales ['2901+2981'] [0.3542172043987936] [0.30370055295618886]
+objet dans groupe 2
+zone optimales ['2903+2904+2905+2907+2903+2982', '2903+2904+2905+2903+2982+2905+2906'] [0.20904605108112045, 0.19844703236795186] [0.5987923515598792, 0.6075124568800306]
+2903+2904+2905+2907+2903+2982
+2903+2904+2905+2903+2982+2905+2906
+pas de zones homogène pour 9.0
+zone optimales [] [] []
+zone optimales ['2908+2983'] [0.22814613153750735] [0.7823639774859287]
+2908+2983
+pas de zones homogène pour 2.0
+zone optimales [] [] []
+zones restantes: ['2902']
+{18.0: ['2901+2981'], 14.0: ['2903+2904+2905+2907+2903+2982', '2903+2904+2905+2903+2982+2905+2906'], 8.0: ['2908+2983']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_292020012600_39.png
+temps 494.50413060188293
+20
+[ 1.  2.  4.  8. 14.] ['Clair/Peu nuageux', 'Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Averses']
+objet dans groupe 1
+zone optimales ['2905+2906'] [0.09822168152183385] [0.06978653530377668]
+objet dans groupe 1
+zone optimales ['2904'] [0.2897271942735479] [0.33088774761555395]
+2904
+objet dans groupe 1
+zone optimales ['2983'] [0.028249292090060833] [0.02456140350877193]
+2983
+objet dans groupe 3
+zone optimales ['2901+2903+2907+2908+2981+2982'] [0.2585978531802872] [0.8699773627617431]
+2901+2903+2907+2908+2981+2982
+(array([0], dtype=int64),)
+une seule zone possible pour 1.0
+zone optimales ['2902'] [0.34033799840176937] [0.3767523364485981]
+2902
+toutes les zones sont bien décrites
+{14.0: ['2905+2906'], 8.0: ['2904'], 4.0: ['2983'], 2.0: ['2901+2903+2907+2908+2981+2982'], 1.0: ['2902']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_292020012600_20.png
+temps 589.5951507091522
+33
+[ 2.  8.  9. 14. 18.] ['Nuageux', 'Pluie', 'Pluie abondante', 'Averses', 'Orages']
+objet dans groupe 1
+zone optimales ['2906+2907'] [0.3239594172736733] [0.30833333333333335]
+objet dans groupe 1
+zone optimales ['2903+2904+2905+2908+2983'] [0.23518603540358837] [0.4187904967602592]
+2903+2904+2905+2908+2983
+(array([3], dtype=int64),)
+une seule zone possible pour 9.0
+zone optimales ['2982'] [0.011392408183798367] [0.045866364665911666]
+2982
+(array([1], dtype=int64),)
+une seule zone possible pour 8.0
+zone optimales ['2902'] [0.011082291181709801] [0.3230140186915888]
+2902
+zone optimales ['2901+2981'] [0.6145047903109216] [0.8677158655891111]
+2901+2981
+toutes les zones sont bien décrites
+{18.0: ['2906+2907'], 14.0: ['2903+2904+2905+2908+2983'], 9.0: ['2982'], 8.0: ['2902'], 2.0: ['2901+2981']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_292020012600_33.png
+temps 718.8764970302582
+13
+[ 2.  4.  8.  9. 14.] ['Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Pluie abondante', 'Averses']
+objet dans groupe 1
+zone optimales ['2906+2907+2908'] [0.2554923196925535] [0.374323279195669]
+objet dans groupe 1
+zone optimales ['2981'] [0.005764678304762132] [0.0032232070910556]
+2981
+objet dans groupe 3
+zone optimales ['2902+2903+2982+2903+2983+2904+2905'] [0.4356472913203049] [0.8863857599777499]
+2902+2903+2982+2903+2983+2904+2905
+(array([0], dtype=int64),)
+une seule zone possible pour 4.0
+zone optimales ['2901'] [0.08687593010946142] [0.05108877721943048]
+2901
+pas de zones homogène pour 2.0
+zone optimales [] [] []
+toutes les zones sont bien décrites
+{14.0: ['2906+2907+2908'], 9.0: ['2981'], 8.0: ['2902+2903+2982+2903+2983+2904+2905'], 4.0: ['2901']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_292020012600_13.png
+temps 752.2722883224487
+dep_id 34
+0.44672560691833496
+C:\Users\mary\anaconda3\envs\preproc\lib\site-packages\dask\array\core.py:3901: PerformanceWarning: Increasing number of chunks by factor of 48
+  result = blockwise(
+C:\Users\mary\anaconda3\envs\preproc\lib\site-packages\dask\array\core.py:3901: PerformanceWarning: Increasing number of chunks by factor of 48
+  result = blockwise(
+C:\Users\mary\anaconda3\envs\preproc\lib\site-packages\dask\array\core.py:3901: PerformanceWarning: Increasing number of chunks by factor of 48
+  result = blockwise(
+C:\Users\mary\anaconda3\envs\preproc\lib\site-packages\dask\array\core.py:3901: PerformanceWarning: Increasing number of chunks by factor of 48
+  result = blockwise(
+fin calcul distance
+1
+[ 1.  2.  4.  8.  9. 14. 18.] ['Clair/Peu nuageux', 'Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Pluie abondante', 'Averses', 'Orages']
+objet dans groupe 1
+zone optimales ['3402+3404'] [0.27907852803217953] [0.2545454545454545]
+objet dans groupe 1
+zone optimales ['3405+3408'] [0.21143877191337165] [0.2436926605504587]
+3405+3408
+objet dans groupe 1
+pas de zones homogène pour 9.0
+zone optimales [] [] []
+objet dans groupe 3
+pas de zones homogène pour 8.0
+zone optimales [] [] []
+objet dans groupe 1
+zone optimales ['3401'] [0.4969741016645935] [0.5334821428571429]
+3401
+zone optimales ['3403+3406+3407+3481+3482'] [0.5880472215186121] [0.6197971318642882]
+3403+3406+3407+3481+3482
+pas de zones homogène pour 1.0
+zone optimales [] [] []
+zones restantes: ['3483']
+{18.0: ['3402+3404'], 14.0: ['3405+3408'], 4.0: ['3401'], 2.0: ['3403+3406+3407+3481+3482']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_342020012600_1.png
+temps 1066.3088467121124
+5
+[ 1.  2.  4.  8.  9. 14. 18.] ['Clair/Peu nuageux', 'Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Pluie abondante', 'Averses', 'Orages']
+objet dans groupe 1
+zone optimales ['3408+3482'] [0.25956812160336107] [0.1756152125279642]
+objet dans groupe 1
+zone optimales ['3407+3483'] [0.20470051580533566] [0.2746730083234245]
+3407+3483
+objet dans groupe 1
+pas de zones homogène pour 9.0
+zone optimales [] [] []
+objet dans groupe 1
+zone optimales ['3402+3405'] [0.43072672740512297] [0.6685393258426966]
+3402+3405
+zone optimales ['3401'] [0.4378721356829254] [0.6339285714285714]
+3401
+zone optimales ['3403+3404+3406+3481'] [0.5721491849983518] [0.6863480162449235]
+3403+3404+3406+3481
+pas de zones homogène pour 1.0
+zone optimales [] [] []
+toutes les zones sont bien décrites
+{18.0: ['3408+3482'], 14.0: ['3407+3483'], 8.0: ['3402+3405'], 4.0: ['3401'], 2.0: ['3403+3404+3406+3481']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_342020012600_5.png
+temps 916.0054421424866
+6
+[ 2.  4.  8.  9. 14. 18.] ['Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Pluie abondante', 'Averses', 'Orages']
+objet dans groupe 1
+zone optimales ['3408+3482+3483'] [0.5371218735093198] [0.4015151515151515]
+objet dans groupe 1
+zone optimales ['3407'] [0.11352280409900206] [0.11684370257966616]
+3407
+objet dans groupe 1
+pas de zones homogène pour 9.0
+zone optimales [] [] []
+objet dans groupe 1
+zone optimales ['3402+3405'] [0.4939686369119421] [0.7167602996254682]
+3402+3405
+zone optimales ['3401'] [0.42065032444411643] [0.5714285714285714]
+3401
+zone optimales ['3403+3404+3406+3481'] [0.616287193143618] [0.761012183692596]
+3403+3404+3406+3481
+toutes les zones sont bien décrites
+{18.0: ['3408+3482+3483'], 14.0: ['3407'], 8.0: ['3402+3405'], 4.0: ['3401'], 2.0: ['3403+3404+3406+3481']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_342020012600_6.png
+temps 849.1173181533813
+4
+[ 2.  4.  8.  9. 14. 18.] ['Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Pluie abondante', 'Averses', 'Orages']
+objet dans groupe 1
+zone optimales ['3407'] [0.10324282126689356] [0.07132018209408195]
+objet dans groupe 1
+zone optimales ['3405'] [0.1277758507497793] [0.15424164524421594]
+3405
+objet dans groupe 1
+zone optimales ['3404'] [0.15738944557077314] [0.11266511266511267]
+3404
+zone optimales ['3408+3483'] [0.13481498602373437] [0.5882352941176471]
+3408+3483
+zone optimales ['3401+3402'] [0.4935514407920185] [0.4807073954983923]
+3401+3402
+zone optimales ['3403+3406+3481+3482'] [0.5311950182902876] [0.8317631224764468]
+3403+3406+3481+3482
+toutes les zones sont bien décrites
+{18.0: ['3407'], 14.0: ['3405'], 9.0: ['3404'], 8.0: ['3408+3483'], 4.0: ['3401+3402'], 2.0: ['3403+3406+3481+3482']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_342020012600_4.png
+temps 973.3668253421783
+10
+[ 2.  4.  8. 14.] ['Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Averses']
+objet dans groupe 1
+zone optimales ['3408'] [0.08390624909195515] [0.047217537942664416]
+objet dans groupe 1
+zone optimales ['3405'] [0.13940124555209477] [0.12253641816623821]
+3405
+objet dans groupe 1
+zone optimales ['3401+3402'] [0.33790184847941573] [0.30760986066452306]
+3401+3402
+objet dans groupe 3
+zone optimales ['3403+3404+3406+3407+3481+3482+3483'] [0.2879240557982971] [0.9769553072625698]
+3403+3404+3406+3407+3481+3482+3483
+toutes les zones sont bien décrites
+{14.0: ['3408'], 8.0: ['3405'], 4.0: ['3401+3402'], 2.0: ['3403+3404+3406+3407+3481+3482+3483']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_342020012600_10.png
+temps 1001.6967787742615
+20
+[1. 2. 4.] ['Clair/Peu nuageux', 'Nuageux', 'Brume/Brouillard/Grisaille']
+objet dans groupe 1
+zone optimales ['3401+3402+3405+3408'] [0.27167107530950124] [0.2708043417756749]
+objet dans groupe 1
+pas de zones homogène pour 2.0
+zone optimales [] [] []
+objet dans groupe 3
+zone optimales ['3403+3404+3406+3407+3481+3482+3483'] [0.47744299358798925] [0.9848696461824954]
+3403+3404+3406+3407+3481+3482+3483
+toutes les zones sont bien décrites
+{4.0: ['3401+3402+3405+3408'], 1.0: ['3403+3404+3406+3407+3481+3482+3483']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_342020012600_20.png
+temps 1026.0640442371368
+30
+[2. 4.] ['Nuageux', 'Brume/Brouillard/Grisaille']
+objet dans groupe 1
+zone optimales ['3405+3408+3482+3483'] [0.5501656366841667] [0.551880380607159]
+objet dans groupe 3
+zone optimales ['3401+3402+3404+3403+3406+3407+3481'] [0.5588616799654101] [0.9448166431593794]
+3401+3402+3404+3403+3406+3407+3481
+toutes les zones sont bien décrites
+{4.0: ['3405+3408+3482+3483'], 2.0: ['3401+3402+3404+3403+3406+3407+3481']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_342020012600_30.png
+temps 674.8964667320251
+dep_id 41
+0.18192195892333984
+C:\Users\mary\anaconda3\envs\preproc\lib\site-packages\dask\array\core.py:3901: PerformanceWarning: Increasing number of chunks by factor of 31
+  result = blockwise(
+C:\Users\mary\anaconda3\envs\preproc\lib\site-packages\dask\array\core.py:3901: PerformanceWarning: Increasing number of chunks by factor of 31
+  result = blockwise(
+C:\Users\mary\anaconda3\envs\preproc\lib\site-packages\dask\array\core.py:3901: PerformanceWarning: Increasing number of chunks by factor of 31
+  result = blockwise(
+C:\Users\mary\anaconda3\envs\preproc\lib\site-packages\dask\array\core.py:3901: PerformanceWarning: Increasing number of chunks by factor of 31
+  result = blockwise(
+fin calcul distance
+45
+[ 2.  4.  8.  9. 14. 18.] ['Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Pluie abondante', 'Averses', 'Orages']
+zone optimales ['4101'] [0.06030113203282397] [0.03574788334901223]
+zone optimales ['4104+4105'] [0.07573600703465255] [0.25589519650655024]
+4104+4105
+pas de zones homogène pour 9.0
+zone optimales [] [] []
+zone optimales ['4106'] [0.048147284294072536] [0.6487194412107101]
+4106
+zone optimales ['4103'] [0.011836450865721819] [0.007589025102159953]
+4103
+pas de zones homogène pour 2.0
+zone optimales [] [] []
+zones restantes: ['4102']
+{18.0: ['4101'], 14.0: ['4104+4105'], 8.0: ['4106'], 4.0: ['4103']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_412020012600_45.png
+temps 108.23599481582642
+4
+[ 2.  4.  8. 10. 14. 18.] ['Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Neige', 'Averses', 'Orages']
+zone optimales ['4103'] [0.01726532328279625] [0.011091652072387624]
+zone optimales ['4101+4102'] [0.1920417282437521] [0.3577981651376147]
+4101+4102
+zone optimales ['4104'] [0.00620821536179473] [0.003629764065335753]
+4104
+pas de zones homogène pour 8.0
+zone optimales [] [] []
+zone optimales ['4105+4106'] [0.06964486738030945] [0.3159860557768924]
+4105+4106
+pas de zones homogène pour 2.0
+zone optimales [] [] []
+toutes les zones sont bien décrites
+{18.0: ['4103'], 14.0: ['4101+4102'], 10.0: ['4104'], 4.0: ['4105+4106']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_412020012600_4.png
+temps 99.743155002594
+44
+[ 2.  4.  8. 14.] ['Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Averses']
+zone optimales ['4103+4104+4105'] [0.3152420519710556] [0.3552492046659597]
+(array([3], dtype=int64),)
+une seule zone possible pour 8.0
+zone optimales ['4106'] [0.419324149705861] [0.9083236321303841]
+4106
+zone optimales ['4101'] [0.19264224181330286] [0.1279397930385701]
+4101
+(array([0], dtype=int64),)
+une seule zone possible pour 2.0
+zone optimales ['4102'] [0.3373365497759706] [0.5361111111111111]
+4102
+toutes les zones sont bien décrites
+{14.0: ['4103+4104+4105'], 8.0: ['4106'], 4.0: ['4101'], 2.0: ['4102']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_412020012600_44.png
+temps 68.26815271377563
+5
+[ 2.  4.  8. 14.] ['Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Averses']
+zone optimales ['4103+4104'] [0.505954460990723] [0.4174496644295302]
+(array([2], dtype=int64),)
+une seule zone possible pour 8.0
+zone optimales ['4102'] [0.016175552870801753] [0.17777777777777778]
+4102
+(array([0], dtype=int64),)
+une seule zone possible pour 4.0
+zone optimales ['4101'] [0.48913439280547333] [0.9454374412041392]
+4101
+zone optimales ['4105+4106'] [0.7654438403351213] [0.799800796812749]
+4105+4106
+toutes les zones sont bien décrites
+{14.0: ['4103+4104'], 8.0: ['4102'], 4.0: ['4101'], 2.0: ['4105+4106']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_412020012600_5.png
+temps 72.6461546421051
+20
+[ 2.  8. 14.] ['Nuageux', 'Pluie', 'Averses']
+zone optimales ['4102'] [0.005037846992147175] [0.002777777777777778]
+zone optimales ['4101'] [0.46590884311613323] [1.0]
+4101
+zone optimales ['4103+4104+4105+4106'] [0.6997767521462572] [0.8435330211529146]
+4103+4104+4105+4106
+toutes les zones sont bien décrites
+{14.0: ['4102'], 8.0: ['4101'], 2.0: ['4103+4104+4105+4106']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_412020012600_20.png
+temps 85.27963852882385
+30
+[ 2.  4.  8. 14.] ['Nuageux', 'Brume/Brouillard/Grisaille', 'Pluie', 'Averses']
+zone optimales ['4101'] [0.158044963849108] [0.09783631232361242]
+zone optimales ['4106'] [0.10192048419517472] [0.24563445867287545]
+4106
+pas de zones homogène pour 4.0
+zone optimales [] [] []
+zone optimales ['4102+4103+4104+4105'] [0.34202904400821643] [0.9615713065755764]
+4102+4103+4104+4105
+toutes les zones sont bien décrites
+{14.0: ['4101'], 8.0: ['4106'], 2.0: ['4102+4103+4104+4105']}
+C:\Users\mary\Desktop\stageemi\figures\zonage\total\v3_zonage_412020012600_30.png
+temps 104.50473093986511

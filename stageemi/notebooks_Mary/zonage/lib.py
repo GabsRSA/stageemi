@@ -5,7 +5,7 @@ Created on Mon Feb 24 17:43:12 2020
 
 @author: borderiesm
 
-fonctions utiles pour le
+fonctions utiles pour le zonage
 
 """
 
@@ -406,7 +406,7 @@ def group_masks_size(listMasks,ds_mask):
     taille_masks = ds_mask.sel(id=listMasks).mask.sum(["longitude","latitude"]) # /ds_mask.mask.sel(id=['mask']).sum()
     taille1,taille2 = taille_masks.quantile([1/3,2/3])
 
-    print(taille1.values,taille2.values)
+#     print(taille1.values,taille2.values)
     ind1 = np.where( (taille_masks.values < taille1.values) & (taille_masks.values > 0))
     groupe1 = ds_mask.sel(id=listMasks).mask.isel(id=ind1[0])
 
