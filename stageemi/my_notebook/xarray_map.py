@@ -12,6 +12,7 @@ from branca.colormap import linear
 from holoviews.operation import histogram
 import holoviews as hv
 import pandas as pd
+import numpy as np
 
       
     
@@ -247,16 +248,37 @@ class interactive_map(widg.HBox):
             w = int(self.dfres.loc[self.dfres['zone']==id_i]['compas'])
             x = int(self.dfres.loc[self.dfres['zone']==id_i]['agat'])
             y = int(self.dfres.loc[self.dfres['zone']==id_i]['compas_asym'])
-            z = int(self.dfres.loc[self.dfres['zone']==id_i]['agat_asym'])            
+            z = int(self.dfres.loc[self.dfres['zone']==id_i]['agat_asym'])    
             
+            filecodeswwmf='../utils/CodesWWMF.csv'
+            # Do something with the file
+            df=pd.read_csv(filecodeswwmf,sep=',')
+            #print(df.head)
+            rstr=np.unique(df.loc[df['Code WME']==r]['Legende WME'])[0]
+            wstr=np.unique(df.loc[df['Code WME']==w]['Legende WME'])[0]
+            xstr=np.unique(df.loc[df['Code W1']==x]['Legende W1'])[0]
+            ystr=np.unique(df.loc[df['Code WME']==y]['Legende WME'])[0]
+            zstr=np.unique(df.loc[df['Code W1']==z]['Legende W1'])[0]
+            
+            # avec le code
+            #self.html1.value = '''
+            #<h4> Valeur sur {} </h4>
+            #<h4><b>cible wme: {} {}</b></h4>
+            #<h4><b>compas: {} {}</b></h4>
+            #<h4><b>agat: {} {}</b></h4>
+            #<h4><b>compas asym: {} {}</b></h4>
+            #<h4><b>agat asym: {} {}</b></h4>            
+            #'''.format(feature["properties"]["id"],rstr,r,wstr,w,xstr,x,ystr,y,zstr,z)
+            
+            # sans le code juste lae descriptif
             self.html1.value = '''
             <h4> Valeur sur {} </h4>
-            <h4><b>cible wme {}</b></h4>
-            <h4><b>compas {}</b></h4>
-            <h4><b>agat {}</b></h4>
-            <h4><b>compas asym {}</b></h4>
-            <h4><b>agat asym {}</b></h4>            
-            '''.format(feature["properties"]["id"],r,w,x,y,z)
+            <h4><b>cible wme: {}</b></h4>
+            <h4><b>compas: {}</b></h4>
+            <h4><b>agat: {}</b></h4>
+            <h4><b>compas asym: {}</b></h4>
+            <h4><b>agat asym: {}</b></h4>            
+            '''.format(feature["properties"]["id"],rstr,wstr,xstr,ystr,zstr)
                                                             
         else: 
             self.html1.value = '''
