@@ -11,6 +11,7 @@ import json
 from branca.colormap import linear
 from holoviews.operation import histogram
 import holoviews as hv
+import pandas as pd
 
       
     
@@ -25,7 +26,7 @@ class interactive_map(widg.HBox):
         self.step = 0
         variable_picker = widg.Dropdown(value="WWMF",options=["WWMF","WME","W1","PRECIP","T"])
         variable_picker.observe(self.variable_change,"value")
-        dept_picker = widg.Dropdown(value="38",options={"Isère":"38","Hérault":"34","Loire-et-cher":"41"})
+        dept_picker = widg.Dropdown(value="41",options={"Isère":"38","Hérault":"34","Loire-et-cher":"41"})
         dept_picker.observe(self.change_dept,"value")
         self.dept = dept_picker.value 
         self._variable = variable_picker.value
@@ -125,19 +126,35 @@ class interactive_map(widg.HBox):
         """
         Retourne les zones du departement concernes
         """
-
-        
-        #start modif read Mary zone sympos files
+          
+        #read Mary zone sympos files
         fname_mask = '../GeoData/zones_sympo_multiples/'+self.dept+'_mask_zones_sympos.nc'
         da_mask = xr.open_dataarray(fname_mask)
-        zs_l = [zs for zs in da_mask.id.values.tolist() if "+" not in zs]
+        zs_l = da_mask.id.values.tolist()[1:5] #[zs for zs in da_mask.id.values.tolist() if "+" not in zs]
+        
+        fileresult='../zonageWME/'+self.dept+'_'+self.date.strftime("%Y%m%d%H")+'_'+str(self.step)+'.csv'
+        try:
+            f = open(fileresult)
+            # Do something with the file
+            dfres=pd.read_csv(fileresult,sep=',',index_col=0)
+            print(dfres)
+            zs_l=dfres["zone"].to_list()
+            print(zs_l)
+            self.dfres=dfres
+        except IOError:
+            print("File not accessible")
+            zs_l=["departement"]
+            if hasattr(self,"dfres"):
+                    del(self.dfres)  # we suppress the attribute in order to ignore the condition in update_chor_html      
+        
         
         self.da_zone = da_mask.sel(id=zs_l).load()
         
         self.da_zone["latitude"] = self.da_zone.latitude.round(5)
         self.da_zone["longitude"] = self.da_zone.longitude.round(5)
         #zsympo = "../GeoData/ZonesSympo/zones_sympo_4326.json"
-        zsympo = "../GeoData/ZonesSympo/zones_sympo_"+self.dept+".json"
+        #zsympo = "../GeoData/ZonesSympo/zones_sympo_"+self.dept+".json"
+        zsympo = "../GeoData/ZonesSympo/zones_sympo_combined_"+self.dept+".json"
         
         with open(zsympo) as geojson1:
             poly_geojson = json.load(geojson1)
@@ -203,8 +220,10 @@ class interactive_map(widg.HBox):
            
         
         if hasattr(self,"mask"):
-             self.mask_da()
+            #print("on passe vraiment ici?")
+            self.mask_da()
         if hasattr(self,"da_zone"):
+            #print("et là aussi?")
             self.aggregate()
                 
     @dm.gogeojson_wwmf
@@ -219,25 +238,39 @@ class interactive_map(widg.HBox):
         '''.format(feature['properties']['value'])
         
     def update_chor_html(self,feature,**kwargs):
-        id_i = feature["properties"]["id"]
-        x = self.da_aggregated.isel(step=self.step).sel(id=id_i).values
-        try:
+        
+        if hasattr(self, "dfres"):
+            id_i = feature["properties"]["id"]
+            r = int(self.dfres.loc[self.dfres['zone']==id_i]['cible_wme'])#da_aggregated.isel(step=self.step).sel(id=id_i).values
+            w = int(self.dfres.loc[self.dfres['zone']==id_i]['compas'])
+            x = int(self.dfres.loc[self.dfres['zone']==id_i]['agat'])
+            y = int(self.dfres.loc[self.dfres['zone']==id_i]['compas_asym'])
+            z = int(self.dfres.loc[self.dfres['zone']==id_i]['agat_asym'])            
+            
             self.html1.value = '''
             <h4> Valeur sur {} </h4>
-            <h4><b>{}</b></h4>
-            '''.format(feature["properties"]["name"],x)
-        except KeyError: 
+            <h4><b>cible wme {}</b></h4>
+            <h4><b>compas {}</b></h4>
+            <h4><b>agat {}</b></h4>
+            <h4><b>compas asym {}</b></h4>
+            <h4><b>agat asym {}</b></h4>            
+            '''.format(feature["properties"]["id"],r,w,x,y,z)
+                                                            
+        else: 
             self.html1.value = '''
             <h4> Valeur sur {} </h4>
-            <h4><b>{}</b></h4>
-            '''.format(feature["properties"]["id"],x)
+            <h4><b>Not calculated</b></h4>
+            '''.format(feature["properties"]["id"])
             
     def change_step(self,change):
         self.step = change["new"]
+        self.get_sympo_zone()
         self.render()
         
     def render(self):
+        #print("Avant de descendre dans le decorateur etc")
         geo_file,legend_file = self.get_step(variable= self.variable)
+        #print("On en revient ici")
         geojson_layer = ipyl.GeoJSON(data=geo_file,hover_style={"opacity":1},name="AROME")
         if hasattr(self,"geojson_layer"):
             if self.geojson_layer in self.m.layers:
@@ -254,13 +287,15 @@ class interactive_map(widg.HBox):
         
         chor_layer = ipyl.Choropleth(geo_data=self.region_geo,
                                     choro_data=self.da_aggregated.isel(step=self.step).to_pandas().to_dict(),
-                                    name="regional_mean",
+                                    name="zonage sur temps sensible (WME)",
                                     value_min = self.vmin,
                                     value_max = self.vmax,
                                     colormap=linear.RdBu_03)
                                     #name="regional_mean")
+            
         if hasattr(self,"chor_layer"):
             if self.chor_layer in self.m.layers:
+                #print("on passe la")
                 self.m.substitute_layer(self.chor_layer,chor_layer)
             else: 
                 self.m.add_layer(chor_layer)
