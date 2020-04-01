@@ -13,9 +13,7 @@ import time
 import glob
 import sys, os
 import string
-
 sys.path.insert(0, os.path.abspath('./lib'))
-
 from lib import hss,precision #,far,f1, pod,pofd
 from lib import create_combination_subzones, create_nc_mask_NSEO
 from lib import find_neighbours,get_optimal_subzone_v2, group_masks_size, select_group_mask, get_WME_legend, get_not_included_masks
@@ -26,16 +24,18 @@ import stageemi.dev.distance_wwmf as distance_wwmf
 matplotlib.rcParams['legend.handlelength'] = 0
 matplotlib.rcParams['legend.numpoints'] = 1
 
-''' input '''
-date = '2020012600'
-# date = '2020030600'
-list_name = ['compas','agat','compas_asym','agat_asym'] # pour agreger le temps sensible
+# On obtient un zonage par departement par echeance.
 
-mask_sympo = True
-mask_geographique = False
-dir_fig = '../figures/total/'
-nsubzonesMax = 7
+''' input '''
+date = '2020012600' # Date pour laquelle on fait tourner 
+list_method_distance = ['compas','agat','compas_asym','agat_asym'] # pour agreger le temps sensible
+
+mask_sympo = True # Veut-on des combie de zones sympos ? 
+mask_geographique = False # Veut-on des combinaisons Est/Ouest/Nord/Sud. A rebrancher. 
+dir_fig = '../figures/total/' 
+nsubzonesMax = 7 # Nombre de sous zones 
 plot_results = True
+Force = False # Force to recompute staff 
 if date == '2020012600':
 #     echeance_dict = {
 #         '38':[44,12,3,46,43,25,30],
@@ -46,7 +46,7 @@ if date == '2020012600':
         echeance_dict = {
         '41':[45,5]
     }
-if date == '2020030600':
+elif date == '2020030600':
     echeance_dict = {
         '38':[29,3,1,4,36],
         '41':[18],
@@ -61,13 +61,15 @@ for dep_id in echeance_dict.keys():
     if mask_sympo and not mask_geographique: 
         fname_out = '../GeoData/zones_sympo_multiples/'+dep_id+'_mask_zones_sympos.nc'
         if not os.path.exists(fname_out): 
+            # Creation du fichier (netcdf) de combinaison des zones sympos 
             dir_mask = '/home/mrpa/borderiesm/stageEMI/Codes/StageEMI/Masques_netcdf/ZONE_SYMPO/'
             list_subzones = glob.glob(dir_mask + dep_id +'*.nc')
             n_subzones = len(list_subzones)  # nombre de zones sympos initiales
             lst_subzones = [zone[-7:-3] for zone in list_subzones]
             ds_mask = create_combination_subzones(dir_mask,dep_id,lst_subzones,fname_out,degre5=True) 
-            ds_mask = ds_mask.chunk({"id":1})
+            ds_mask = ds_mask.chunk({"id":1}) # Rend le calcul parallele possible 
         else: 
+            # Le fichier est disponible 
             ds_mask = xr.open_dataset(fname_out,chunks={"id":1})
 
     if mask_geographique and not mask_sympo: 
@@ -80,6 +82,7 @@ for dep_id in echeance_dict.keys():
             sys.exit()
         fname_out = '../GeoData/zones_sympo_multiples/'+ dep_id+'_'+dep+'_mask_NSEO.nc'
         if not os.path.exists(fname_out):
+            # Creation du fichier (netcdf) s'il n'existe pas 
             dir_mask  = '../GeoData/nc_departement/'
             dep_file  = dir_mask + dep +'.nc' 
             print('on cree',fname_out)
@@ -87,34 +90,39 @@ for dep_id in echeance_dict.keys():
             ds_mask = ds_mask.chunk({"id":1})
         else:
             ds_mask = xr.open_dataset(fname_out,chunks={"id":1})
-            
+    # Arrondi pour éviter les erreurs         
     ds_mask["latitude"]  = ds_mask["latitude"].round(5)
     ds_mask["longitude"] = ds_mask["longitude"].round(5)
    
-    ''' lecture arome '''
+    ''' lecture fichier arome '''
     fname = "../WWMF/" + date+'0000__PG0PAROME__'+'WWMF'+'__EURW1S100______GRILLE____0_48_1__SOL____GRIB2.nc'
-
     ds = xr.open_dataset(fname,chunks={"step":1}).isel(step = echeance_list)
+    # Arrondi pour éviter les erreurs     
     ds['latitude']  = ds['latitude'].round(5)
     ds['longitude'] = ds['longitude'].round(5)
     
     ds_dep_tot = (ds*ds_mask.mask.sel(id="departement").drop("id"))
     if date == '2020030600':
         ds_dep_tot = ds_dep_tot.rename({'paramId_0':'unknown'})
-        
+
     ''' calcul des temps agrégés '''
     ds_distance_dict = {}
-    for name in list_name:
-        ds_distance         = distance_wwmf.get_pixel_distance_dept(ds_dep_tot,name)
+    for name in list_method_distance:
+        ds_distance         = distance_wwmf.get_pixel_distance_dept(ds_dep_tot,name) # rajoute les variables wme_arr et w1_arr
         ds_distance_chunk   = ds_distance.chunk({"step":1}) 
+        # On recupere ici toute les zones. 
         ds_distance_dict[name] = (ds_distance_chunk * ds_mask.mask).sum(['latitude',"longitude"]).compute()
     print('fin calcul distance')
     
+
+    # On part toujours sur l'utilisation des dénominations COMPAS car elles sont moins nombreuses?  
+
     var_name = 'wme_arr'
     for icheance,echeance in enumerate(echeance_list): 
         print(echeance)
         fname_out = '../zonageWME/v6_'+dep_id+'_'+date+'_'+str(echeance)+'.csv'
-        if os.path.exists(fname_out):
+
+        if os.path.exists(fname_out) and not Force:
             print(fname_out,'existe')
             continue
         
@@ -123,30 +131,30 @@ for dep_id in echeance_dict.keys():
         ds_dep = ds_dep_tot.isel(step = icheance).copy()
         # on regroupe 'Très nuageux/Couvert' et 'Nuageux'
         ds_dep = ds_dep.where(~((ds_dep[var_name].values == 2) + (ds_dep[var_name].values == 3) ), 2)
-
         # on regroupe ensemble neige (10) et neige faible (7)
         ds_dep = ds_dep.where(~((ds_dep[var_name].values == 7) + (ds_dep[var_name].values == 10)), 10)
-        
         # on regroupe ensemble pluie (8) et pluie faible (6)
         ds_dep = ds_dep.where(~((ds_dep[var_name].values == 8) + (ds_dep[var_name].values == 6)),8)
-
         # on regroupe ensemble qlqs averses (12) et averses (14), et qlqs averses de neige (13)
         ds_dep = ds_dep.where(~((ds_dep[var_name].values == 12) + (ds_dep[var_name].values == 13)
                                   + (ds_dep[var_name].values == 14 )),14)
-
         # on regroupe ensemble averses Orageuses (16) et Orages  (18)
         ds_dep = ds_dep.where(~((ds_dep[var_name].values == 16) + (ds_dep[var_name].values == 18)),18)
 
         file_CodesWWMF = '../utils/CodesWWMF.csv'
-        cible_list,legend_list = get_WME_legend(file_CodesWWMF, ds_dep)
+        cible_list,legend_list = get_WME_legend(file_CodesWWMF, ds_dep) 
         print(cible_list,legend_list)
 
         ''' zonage '''
-        listCible    = cible_list[::-1]
+        listCible    = cible_list[::-1] # On considère que l'ordre inverse est l'ordre de criticité maximun.
+                                        # A bien définir lors de l'utilisation selon les cas.  
+
         legend_cible = [] # pour stocker la légende du code WME
         listMasksNew = ds_mask.id.values # on commence avec l'ensemble des masks
 
         # liste de zones sympos initiales (pour checker à la fin si on a une info sur toutes les zones du département)
+        # Peut être changer la condition en utilisant le + ? 
+        # 
         list_zones_sympos_initiales = [zone for zone in ds_mask.id.values if len(zone) == 4]
 
         nsubzones    = 0
@@ -173,23 +181,23 @@ for dep_id in echeance_dict.keys():
                     groupe_mask_select = ds_mask.mask.sel(id=listMasksNew)
                 # on selectionne la zone optimale (selon le hss et la précision)
                 zones_optimales,score_hss,score_precision=get_optimal_subzone_v2(ds_dep, groupe_mask_select,cible,ds_mask)
-                if len(zones_optimales)==0:
-                    # pas de zone sélectionnée pour ce temps sensible
-                    continue
-                else: 
+                if len(zones_optimales)!=0:
                     legend_cible.append(legend_list[::-1][icible])
                     score_zones_cibles[cible] = score_hss
                     zones_cibles[cible] = zones_optimales 
-                    nsubzones +=1                          
+                    nsubzones +=1 
+                    # sinon pas de zones selectionnées                         
 
                 ''' on check que la somme des zones n'est pas déjà égale au departement '''
                 if  (nsubzones== 1) and (len(zones_cibles[cible]) == 1) :
                     ds_temp  = ds_mask.sel(id=zones_cibles[cible][0]).mask.copy()
 
                 elif (nsubzones== 1) and (len(zones_cibles[cible]) > 1): 
+#                    ds_temp  = ds_mask.sel(id=zones_cibles[cible]).mask.sum("id") >= 1  
                     ds_temp  = ds_mask.sel(id=zones_cibles[cible][0]).mask.copy() 
                     ds_temp.values[(ds_temp.values == 1) + (ds_mask.sel(id=zones_cibles[cible][1]).mask.values ==1) ] = 1
                 else: 
+                    # ds_temp = (ds_temp + ds_mask.sel(id=zones_cibles[cible]).mask.sum("id")) >= 1
                     for zone in zones_cibles[cible]:
                         print(zone)
                         ds_temp.values[(ds_temp.values == 1) + (ds_mask.sel(id=zone).mask.values ==1) ] = 1
@@ -227,7 +235,7 @@ for dep_id in echeance_dict.keys():
             d['zone'] += zones_restantes
             d['hss'] += [np.nan for i in range(len(zones_restantes))]
             d['cible_wme'] += [np.nan for i in range(len(zones_restantes))]
-        for name in list_name:
+        for name in list_method_distance:
             d[name] =  ds_distance_dict[name].wwmf_2[ds_distance_dict[name].argmin("wwmf_2")].sel(id=d['zone']).isel(step=icheance).values
         pd.DataFrame(data=d).to_csv(fname_out)
         
@@ -275,7 +283,7 @@ for dep_id in echeance_dict.keys():
                     if iplot ==0:
                         label = zone_select +': '+ legend_cible[icible] + ' ({})'.format(cible)
                         # ajout de l'agregation: 
-                        for name in list_name: 
+                        for name in list_method_distance: 
                             val_agrege = ds_distance_dict[name].wwmf_2[ds_distance_dict[name].argmin("wwmf_2")].sel(id=zone_select).isel(step=icheance).values
                             label += ' {}:{}'.format(name,val_agrege)
                 if iplot == 0:
@@ -287,6 +295,6 @@ for dep_id in echeance_dict.keys():
         fig.savefig(fname_fig,dpi=400,bbox_inches='tight',format='png',bbox_extra_artists=(lgd,),)
         plt.clf()
         plt.close('all')
-        print('temps',time.time()-tdeb)
-    print()
+        print('temps %s \n'%(time.time()-tdeb))
+
 

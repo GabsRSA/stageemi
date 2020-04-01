@@ -106,10 +106,16 @@ def precision(y_true,y_pred):
         return tp/(fp + tp)
     else:
         return np.nan
-        
+
+
+
+
 '''
     fonctions qui permettent de comparer plusieurs masks et de créer des combinaisons de zones sympos
 '''
+
+
+
 def find_neighbours(mask_ref,listMasks): 
     '''  return: liste contenant les id des zones voisines à la zone définit par mask_ref '''
     lst_neighbours = []
@@ -117,6 +123,7 @@ def find_neighbours(mask_ref,listMasks):
         if mask_ref.identical(mask2compare): 
             continue 
         else: 
+            # Somme permet de savoir si des masques se touchent (car les zones voisines ont des pixels communs)
             somme          = np.sum((mask_ref.mask.values == 1) & (mask2compare.mask.values == 1))
             # tailleRef et taille2compare permettent de checker si un des deux masks n'est pas déjà inclu dans l'autre
             tailleRef      = np.sum(~np.isnan(mask_ref.mask.values ))
@@ -133,7 +140,8 @@ def check_existing_mask_v2(mask_temp,ds_mask):
     '''
     list_str = ds_mask.id.values
     for id in list_str:
-        mask2compare = ds_mask.mask.sel(id = id)      
+        mask2compare = ds_mask.mask.sel(id = id)   
+        #  A verifier si on a pas une condition plus simple du type    mask_temp.values ==  mask2compare.values
         somme = np.sum(mask_temp.values ==  mask2compare.values)
         norme = np.sum((~np.isnan(mask_temp.values)) + (~np.isnan(mask2compare.values)))
         if somme/norme==1:
@@ -146,9 +154,13 @@ def check_existing_mask_v2(mask_temp,ds_mask):
 
 def create_new_mask(ds_mask, id_ref,listMasks):
     '''
-        on ajoute à ds_mask un mask egal a mask_ref + les masks voisins qui sont dans la liste des masks voisins listMasks
+        Pour chaque voisin de id_ref, on cree un mask contenant id_ref + le masque voisin. 
+        listMask : Fourni la liste (dataset) des masques voisins. 
+        id_ref : c'est une zone qui existe deja 
+        # on ajoute à ds_mask(id_ref) un mask egal a mask_ref + les masks voisins qui sont dans la liste des masks voisins listMasks
     '''
     mask_ref = ds_mask.sel(id = id_ref).copy(deep=True)
+
     for  mask2compare in listMasks:
         new_id = str(mask_ref.mask.id.values) +'+'+ str(mask2compare.mask.id.values) 
         mask_ref = ds_mask.sel(id = id_ref).copy(deep=True)
@@ -345,18 +357,24 @@ def create_combination_subzones(dir_mask,dep_id,lst_subzones,fname_out,degre5=Fa
     ds_mask.to_netcdf(fname_out)
     return ds_mask
 
+
+
+
+
 '''
     Fonctions pour zoner un departement 
 '''
 
 def get_optimal_subzone_v2(ds_WME, groupe_mask_select,cible,ds_mask):
     """
+        ds_WME  = xarray contenant les champs WME
         cible = valeur du temps sensible cible (par exemple code WME)
         groupe_mask_select = ensemble de masks qui vont être comparés à l'objet météo
-        ds_WME:xarray contenant les champs WME
+        ds_mask = La liste de masques
     """
     score_precision = np.zeros(len(groupe_mask_select))    
     score_hss       = np.zeros(len(groupe_mask_select)) 
+    
     for imask,ds_mask_sub in enumerate(groupe_mask_select):    
         # check if latitudes are aranged in the the same way
         lat1 = ds_mask_sub.latitude.values
@@ -472,40 +490,9 @@ def select_group_mask(ds_WME,cible,groupe1,groupe2,groupe3,taille1,taille2):
         groupe_mask_select = groupe3
     return groupe_mask_select 
 
-def get_not_included_masks_geo(mask_temp, list_id,ds_mask,flag_strictly_included=True):
-    '''
-        return: ensemble des combinaisons de zones sans celles incluses dans mask_temp. 
-        flag_strictly_included = True si on supprime seulement les zones qui sont incluses dans mask_temp 
-                               = False si on supprime aussi les zones qui ont une zone sympo incluse dans mask_temp
-        à vérifier
-                              
-    '''    
-    lst_mask_not_included = [] # not included in mask_temp
-    lst_mask_strict_included = [] # zones included in mask_temp
-    for id in list_id:
-        mask2compare = ds_mask.mask.sel(id = id)  
-        somme = np.sum((mask_temp.values ==1) & (mask2compare.values==1)) 
-        taille2 = np.sum(mask2compare.values==1)
-        taille1 = np.sum(mask_temp.values==1)
-        if somme == taille2 :
-            lst_mask_strict_included.append(id)
-
-    lst_temp = []
-    if not flag_strictly_included:
-        for zone in list_id:
-            for zone_included in lst_mask_strict_included:
-                somme = np.sum((ds_mask.mask.sel(id=zone).values == 1) & (ds_mask.mask.sel(id=zone_included).values == 1))
-                if somme>0:
-                    lst_temp.append(zone)
-        lst_mask_not_included_final = [element for element in list_id if element not in lst_temp]            
-    else: 
-        lst_mask_not_included_final = [element for element in list_id if element not in lst_mask_strict_included]  
-    return lst_mask_not_included_final,  lst_mask_strict_included
-
-
 def get_not_included_masks(mask_temp, list_id,ds_mask,flag_strictly_included=True):
     '''
-        return: ensemble des combinaisons de zones sans celles incluses dans mask_temp. 
+        return: Ensemble des combinaisons de zones qui n'ont pas de bout commun avec celles incluses dans mask_temp. 
         flag_strictly_included = True si on supprime seulement les zones qui sont incluses dans mask_temp 
                                = False si on supprime aussi les zones qui ont une zone sympo incluse dans mask_temp
         check par les noms des id et non pas par les inclusions de 1  
