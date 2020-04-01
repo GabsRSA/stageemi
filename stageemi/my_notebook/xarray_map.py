@@ -128,22 +128,18 @@ class interactive_map(widg.HBox):
         Retourne les zones du departement concernes
         """
           
-        #read Mary zone sympos files
+        # read the zone sympos file for the corresponding department
         fname_mask = '../GeoData/zones_sympo_multiples/'+self.dept+'_mask_zones_sympos.nc'
         da_mask = xr.open_dataarray(fname_mask)
-        zs_l = da_mask.id.values.tolist()[1:5] #[zs for zs in da_mask.id.values.tolist() if "+" not in zs]
         
         fileresult='../zonageWME/'+self.dept+'_'+self.date.strftime("%Y%m%d%H")+'_'+str(self.step)+'.csv'
         try:
             f = open(fileresult)
-            # Do something with the file
             dfres=pd.read_csv(fileresult,sep=',',index_col=0)
-            print(dfres)
             zs_l=dfres["zone"].to_list()
-            print(zs_l)
             self.dfres=dfres
         except IOError:
-            print("File not accessible")
+            #print("File not accessible")
             zs_l=["departement"]
             if hasattr(self,"dfres"):
                     del(self.dfres)  # we suppress the attribute in order to ignore the condition in update_chor_html      
@@ -251,9 +247,7 @@ class interactive_map(widg.HBox):
             z = int(self.dfres.loc[self.dfres['zone']==id_i]['agat_asym'])    
             
             filecodeswwmf='../utils/CodesWWMF.csv'
-            # Do something with the file
             df=pd.read_csv(filecodeswwmf,sep=',')
-            #print(df.head)
             rstr=np.unique(df.loc[df['Code WME']==r]['Legende WME'])[0]
             wstr=np.unique(df.loc[df['Code WME']==w]['Legende WME'])[0]
             xstr=np.unique(df.loc[df['Code W1']==x]['Legende W1'])[0]
@@ -270,7 +264,7 @@ class interactive_map(widg.HBox):
             #<h4><b>agat asym: {} {}</b></h4>            
             #'''.format(feature["properties"]["id"],rstr,r,wstr,w,xstr,x,ystr,y,zstr,z)
             
-            # sans le code juste lae descriptif
+            # sans le code juste le descriptif
             self.html1.value = '''
             <h4> Valeur sur {} </h4>
             <h4><b>cible wme: {}</b></h4>
@@ -315,7 +309,6 @@ class interactive_map(widg.HBox):
                                     value_min = self.vmin,
                                     value_max = self.vmax,
                                     colormap=linear.RdBu_03)
-                                    #name="regional_mean")
             
         if hasattr(self,"chor_layer"):
             if self.chor_layer in self.m.layers:
@@ -429,7 +422,7 @@ class interactive_choro_map(interactive_map):
                                     value_min = self.vmin,
                                     value_max = self.vmax,
                                     colormap=linear.RdBu_03)
-                                    #name="regional_mean")
+
         if hasattr(self,"chor_layer"):
             if self.chor_layer in self.m.layers:
                 self.m.substitute_layer(self.chor_layer,chor_layer)
