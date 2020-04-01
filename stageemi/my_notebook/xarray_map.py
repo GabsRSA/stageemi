@@ -198,25 +198,10 @@ class interactive_map(widg.HBox):
         else: 
             raise(ValueError("Unknown variable"))
 
-        if self.variable in  ["WME","W1"]:
-            ds_temp = xr.open_dataset(fname,chunks={"step":1})
-            ds_temp["latitude"] = ds_temp.latitude.round(5)
-            ds_temp["longitude"] = ds_temp.longitude.round(5)
-            if self.variable == "WME":
-                ds_out = conversion(ds_temp,"compas")
-                self.da = ds_out["wme_arr"]
-            elif self.variable == "W1":
-                ds_out = conversion(ds_temp,"agat")
-                self.da = ds_out["w1_arr"]
-                
-            else:
-                raise(ValueError("Conversion not implemented")) 
-            
-                  
-        else: 
-            self.da = xr.open_dataarray(fname)
-            self.da['latitude'] = self.da.latitude.round(5)
-            self.da['longitude'] = self.da.longitude.round(5)
+        
+        self.da = xr.open_dataarray(fname)
+        self.da['latitude'] = self.da.latitude.round(5)
+        self.da['longitude'] = self.da.longitude.round(5)
            
         
         if hasattr(self,"mask"):
@@ -228,7 +213,24 @@ class interactive_map(widg.HBox):
                 
     @dm.gogeojson_wwmf
     def get_step(self,variable = "wwmf"):
-        return self.da_masked.isel(step=self.step)
+        if self.variable in  ["WME","W1"]:
+            print("Getting special variable %s"%self.variable)
+            ds_temp = self.da_masked.isel(step=self.step)
+            ds_temp["latitude"] = ds_temp.latitude.round(5)
+            ds_temp["longitude"] = ds_temp.longitude.round(5)
+            ds_temp.name = "unknown"
+            if self.variable == "WME":
+                ds_out = conversion(ds_temp.to_dataset(),"compas")
+                da = ds_out["wme_arr"]
+            elif self.variable == "W1":
+                ds_out = conversion(ds_temp.to_dataset(),"agat")
+                da = ds_out["w1_arr"]
+            else:
+                raise(ValueError("Conversion not implemented")) 
+        else:   
+            print("Getting normal variable %s"%self.variable)
+            da = self.da_masked.isel(step=self.step)
+        return da
     
         
     def update_html(self,feature, **kwargs):
@@ -304,6 +306,45 @@ class interactive_map(widg.HBox):
         self.chor_layer = chor_layer
         self.chor_layer.on_hover(self.update_chor_html)
         
+        
+class contour_interactive(interactive_map):
+    
+    def get_step(self,variable = "wwmf"):
+        import stageemi.dev.geojson_geoview as geo_gv 
+        from io import BytesIO
+        
+        #On converti si besoin 
+        if variable in  ["WME","W1"]:
+            ds_temp = self.da_masked.isel(step=self.step)
+            ds_temp["latitude"] = ds_temp.latitude.round(5)
+            ds_temp["longitude"] = ds_temp.longitude.round(5)
+            ds_temp.name = "unknown"
+            if self.variable == "WME":
+                ds_out = conversion(ds_temp.to_dataset(),"compas")
+                da = ds_out["wme_arr"]
+            elif self.variable == "W1":
+                ds_out = conversion(ds_temp.to_dataset(),"agat")
+                da = ds_out["w1_arr"]
+            else:
+                raise(ValueError("Conversion not implemented")) 
+        else:   
+            da = self.da_masked.isel(step=self.step)
+            
+        
+        if variable in ["WWMF","W1","WME"]: 
+            legend_file = BytesIO()
+            geo_contour = geo_gv.get_WeatherType_contour(da,
+                                                         variable=variable,
+                                                         colorbar_title=legend_file)
+            return geo_contour,legend_file
+        else:
+            raise(ValueError("To be linked"))
+        
+    def update_html(self,feature, **kwargs):
+        self.html1.value = '''
+        <h4> Type de temps </h4>
+        <h4><b>{}</b></h4>
+        '''.format(feature['properties']['legend']) 
         
         
 class interactive_choro_map(interactive_map): 
