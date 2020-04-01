@@ -123,9 +123,8 @@ def get_contour(ds,lat_name ="latitude",lon_name="longitude",levels=10,**kwargs)
                 mp_final = dict_poly[i]["geometry"]
         
         if kwargs.get("qualitative",False) and not mp_final.is_empty:
-            print("Doing buffering")
             buffer_arg = kwargs.get("buffer",5e-4)
-            mp_temp = mp_final.buffer(-buffer_arg).buffer(2*buffer_arg)    
+            mp_temp = mp_final.buffer(-buffer_arg).buffer(1.1*buffer_arg)    
             if mp_temp.area > 0:
                 mp_diff = (mp_final - mp_temp)
                 if mp_diff.area > 0 :
@@ -265,7 +264,7 @@ def get_WeatherType_contour(da,variable,lat_name ="latitude",lon_name="longitude
     list_level = np.concatenate([np.asarray([code_WWMF[0]-1,]),np.unique(da.fillna(0)),np.asarray([code_WWMF[-1]+1,])])
     list_level.sort()
     da.name = "test"
-    geo_contour = get_contour(da,levels=list_level,qualtitative=True,buffer=2e-3)
+    geo_contour = get_contour(da,levels=list_level,qualitative=True,buffer=2e-4)
     for contour in geo_contour["features"]:
         max_val = contour["properties"]["value_max"]
         index = get_index(code_WWMF,max_val)
