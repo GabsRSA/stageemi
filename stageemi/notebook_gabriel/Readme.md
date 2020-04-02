@@ -10,8 +10,11 @@ Les dossiers de scores :
 
 * Explore_zones_sympo : Notebook d'exploration de zones assez simple (pour visu de zones). 
 
-Generation de matrices : 
-* Generation_AGAT_matrix_of_distances : utilise le fichier de sévérité pour calculer la matrice. Calcul la distance dans un espace normé. 
-* make_asymetric_agat_matrix :
-* make_asymetric_compas_matrix
+Generation de matrices :
+Todo : Migrer les codes de générations dans un fichiers `.py` dans les utils.  
+* `Generation_AGAT_matrix_of_distances` : 
+        utilise le fichier de sévérité pour calculer la matrice. Calcul la distance dans un espace normé.
+* `make_asymetric_compas_matrix`, `make_asymetric_agat_matrix` : Generation de la matrice en ajoutant une pénalité (sous la diagonale)
+
+`Find_critical_weather_situations.ipynb` : permet de déterminer quels échéances présentes des codes WWMF un peu élévés. Permet d'explorer rapidement avec des histogrammes. 
 

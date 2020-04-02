@@ -660,34 +660,66 @@ def calculate_distance(ds,name):
     ds=shortest_distance_temps_sensible_Mary(ds,name)
     return ds
 
+################################
+#### Fonction d'hélènes 
+############################
+
 def cree_dict_agglo_insee(num_dep):
-        dict_insee=dict()
+    """"
+        Retourne les codes INSEE et les noms de communes par departement.  
+
+    Args:
+        num_dep ([type]): [description]
+    
+    Returns:
+        [dictionnary]: [Code_Insee : Nom_Commune]
+    """
+    dict_insee=dict()
             # Codes insee
-        file_CodesINSEE= '/home/mrgo/frevilleh/ProjetEMI/stageemi/stageemi/GeoData/code_insee.csv'
-        df_INSEE = pandas.read_csv(file_CodesINSEE,usecols = (0,1,),sep=';')
-        for iinsee, code_insee in enumerate(df_INSEE["Code_commune_INSEE"]):
+    file_CodesINSEE= '/home/mrgo/frevilleh/ProjetEMI/stageemi/stageemi/GeoData/code_insee.csv'
+    df_INSEE = pandas.read_csv(file_CodesINSEE,usecols = (0,1,),sep=';')
+    for iinsee, code_insee in enumerate(df_INSEE["Code_commune_INSEE"]):
             if code_insee[0:2]==str(num_dep):
                 case={df_INSEE["Code_commune_INSEE"][iinsee]:df_INSEE["Nom_commune"][iinsee]}
                 dict_insee.update(case)
-
-        return dict_insee
+    return dict_insee
 
 def cree_ds_all_agglo(ds_tps_sensible,ds_dep_agglo):
+    """
+    Pour la validation. Addition de masques. 
 
-            # Initialisation
-        ds_ini = conversion(ds_tps_sensible.isel(step=istep) * ds_dep_agglo["mask"].isel(id=0))
-        ds_ini_SansNan = np.where(ds_ini["wme_arr"]>=0,ds_ini['wme_arr'],0) #devient un tableau ap cette commande
+    Args:
+        ds_tps_sensible ([type]): [description]
+        ds_dep_agglo ([type]): [description]
+    """
 
-            # Boucle sur toutes les villes
-        ds_dep = conversion(ds_tps_sensible.isel(step=istep) * ds_dep_agglo["mask"])
-        for agglo in ds_dep['wme_arr'].id.values[1:]:
-                ds_iterable = conversion(ds_tps_sensible.isel(step=istep) * ds_dep_agglo["mask"].sel(id=str(agglo)))
-                ds_it_SansNan = np.where(ds_iterable["wme_arr"]>=-1,ds_iterable["wme_arr"],0)
-                ds_ini_SansNan += ds_it_SansNan
+    # Initialisation
+    ds_ini = conversion(ds_tps_sensible.isel(step=istep) * ds_dep_agglo["mask"].isel(id=0))
+    ds_ini_SansNan = np.where(ds_ini["wme_arr"]>=0,ds_ini['wme_arr'],0) #devient un tableau ap cette commande
+
+    # Boucle sur toutes les villes
+    ds_dep = conversion(ds_tps_sensible.isel(step=istep) * ds_dep_agglo["mask"])
+    for agglo in ds_dep['wme_arr'].id.values[1:]:
+        ds_iterable = conversion(ds_tps_sensible.isel(step=istep) * ds_dep_agglo["mask"].sel(id=str(agglo)))
+        ds_it_SansNan = np.where(ds_iterable["wme_arr"]>=-1,ds_iterable["wme_arr"],0)
+        ds_ini_SansNan += ds_it_SansNan
+    
+    return ds_ini_SansNan 
 
 def cree_dict_list_agglo(dict_temps, ds_agglo, ds_dep_agglo):
+    """Boucle sur tout les temps sensibles critiques
+    
+    Args:
+        dict_temps ([type]): [Donne la liste des temps sensibles critiques]
+        ds_agglo ([type]): [Le fichier de masques des agllos]
+        ds_dep_agglo ([type]): [Le temps sensible sur les aglos]
+    
+    Returns:
+        Dictionnaire : Chaque clé correspond à la légende du temps sensible et la valeur correspond à une liste d'agglomération touchées par ce temps sensible. 
+    """
     dict_list_agglo = dict()
     for legende_wwme,code_wwme in dict_temps.items():
+
         ds_bin = ds_agglo.copy(deep=True)
         ds_bin.wme_arr.values[(ds_bin.wme_arr.values==code_wwme)] = 100
         ds_bin.wme_arr.values[(ds_bin.wme_arr.values!=100) & (ds_bin.wme_arr.values>0)] = 200
@@ -702,7 +734,6 @@ def cree_dict_list_agglo(dict_temps, ds_agglo, ds_dep_agglo):
             if taille_objet_binaire > int(taille_agglo*0.25) : 
                 list_agglo.append(nom_commune)
 
-            case = {str(legende_wwme):list_agglo}
-            dict_list_agglo.update(case)
-
+        case = {str(legende_wwme):list_agglo}
+        dict_list_agglo.update(case)
     return dict_list_agglo
