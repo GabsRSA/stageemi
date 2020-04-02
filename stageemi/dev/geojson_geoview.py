@@ -92,12 +92,19 @@ def get_contour(ds,lat_name ="latitude",lon_name="longitude",levels=10,**kwargs)
     
     gv.extension("bokeh")  
     hv_ds = gv.Dataset(ds,[lon_name,lat_name])
-    contours = gv.operation.contours(hv_ds,filled=True,levels=levels)
+    level_list = np.asarray(levels).astype(np.int)
+
+    contours = gv.operation.contours(hv_ds,filled=True,levels=level_list)
+    
+    
+    #contours = gv.operation.contours(hv_ds,filled=True,levels=levels)
+    #print("In geo_contour",contours,type(contours))
+    
     
     
     polygon_list=list() 
     dict_poly = gu.polygons_to_geom_dicts(contours)    
-
+    #print("In geo_contour",dict_poly)
     cmap = kwargs.get("cmap",cm.RdBu)
     mini = kwargs.get("mini",list(contours.data[0].values())[0])
     maxi = kwargs.get("maxi",list(contours.data[-1].values())[0])
@@ -140,15 +147,17 @@ def get_contour(ds,lat_name ="latitude",lon_name="longitude",levels=10,**kwargs)
             except Exception: 
                 mp_temp = mp_final.buffer(-1e-5).buffer(1.1*1e-5)
                 res = Feature(geometry = mp_temp)
+ 
             if isinstance(levels,Iterable): 
                 value = list(contours.data[i].values())[0]
                 descending_list = np.sort(levels)[::-1]
                 bound_min = descending_list[np.argmax(descending_list < value)]
                 bound_max = levels[np.argmax(levels >=value)]
+  
 
                 res["properties"] = {
-                    "value_min":bound_min,
-                    "value_max":bound_max,
+                    "value_min":bound_min*1.0,
+                    "value_max":bound_max*1.0,
                     "units":ds.attrs.get('units'),
                     "name":ds.attrs.get("long_name",ds.name)
                 }
@@ -161,8 +170,8 @@ def get_contour(ds,lat_name ="latitude",lon_name="longitude",levels=10,**kwargs)
         
             res["properties"]["cmap"] = {
                     "value":list(contours.data[i].values())[0],
-                    "mini":mini,
-                    "maxi":maxi,
+                    "mini":mini*1.0,
+                    "maxi":maxi*1.0,
                  }
             res["properties"]["style"] = {
                 "fillColor": rgb2hex(cmap((list(contours.data[i].values())[0]-mini)/(maxi-mini))),
@@ -175,6 +184,7 @@ def get_contour(ds,lat_name ="latitude",lon_name="longitude",levels=10,**kwargs)
             polygon_list.append(res)
         else:
             print("Empty polygon for ",list(contours.data[i].values())[0])
+            
     feature_collection = FeatureCollection(polygon_list)
     return feature_collection 
 
@@ -256,15 +266,18 @@ def get_WeatherType_contour(da,variable,lat_name ="latitude",lon_name="longitude
         raise(ValueError("Variable unkonwn : %s "%variable))
     ## On recupere les codes uniques de ce type de temps sensible         
     N = df_crop.size
-    code_WWMF = df_crop.index.to_numpy()
+    code_WWMF = df_crop.index.to_numpy().astype(np.int)
     code_WWMF.sort()
     
     hex_color, rgb_color = colorbar_definition_wwmf(N,'viridis',variable=variable)
      
-    list_level = np.concatenate([np.asarray([code_WWMF[0]-1,]),np.unique(da.fillna(0)),np.asarray([code_WWMF[-1]+1,])])
+    list_level = np.concatenate([np.asarray([code_WWMF[0]-1,]),np.unique(da.fillna(0)),np.asarray([code_WWMF[-1]+1,])]).astype(np.int)
     list_level.sort()
+  
+    
     da.name = "test"
     geo_contour = get_contour(da,levels=list_level,qualitative=True,buffer=2e-4)
+
     for contour in geo_contour["features"]:
         max_val = contour["properties"]["value_max"]
         index = get_index(code_WWMF,max_val)
