@@ -92,9 +92,7 @@ def get_contour(ds,lat_name ="latitude",lon_name="longitude",levels=10,**kwargs)
     
     gv.extension("bokeh")  
     hv_ds = gv.Dataset(ds,[lon_name,lat_name])
-    level_list = np.asarray(levels).astype(np.int)
-
-    contours = gv.operation.contours(hv_ds,filled=True,levels=level_list)
+    contours = gv.operation.contours(hv_ds,filled=True,levels=levels)
     
     
     #contours = gv.operation.contours(hv_ds,filled=True,levels=levels)
