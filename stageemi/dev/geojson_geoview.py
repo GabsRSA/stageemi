@@ -271,11 +271,12 @@ def get_WeatherType_contour(da,variable,lat_name ="latitude",lon_name="longitude
     
     hex_color, rgb_color = colorbar_definition_wwmf(N,'viridis',variable=variable)
      
-    list_level = np.concatenate([np.asarray([code_WWMF[0]-1,]),np.unique(da.fillna(0)),np.asarray([code_WWMF[-1]+1,])]).astype(np.int)
+    list_level = np.concatenate([np.asarray([code_WWMF[0]-1,]),np.unique(da.fillna(0)),np.asarray([code_WWMF[-1]+1,])]).astype(np.int).tolist()
     list_level.sort()
   
     
     da.name = "test"
+    print(type(list_level))
     geo_contour = get_contour(da,levels=list_level,qualitative=True,buffer=2e-4)
 
     for contour in geo_contour["features"]:
