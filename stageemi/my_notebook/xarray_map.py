@@ -14,17 +14,22 @@ import holoviews as hv
 import pandas as pd
 import numpy as np
 
+import shapely.geometry as sh  
+import json 
+import geojson
+
       
     
 class interactive_map(widg.HBox):
     
-    def __init__(self):
+    def __init__(self,distance_choice="agat"):
         self.m = ipyl.Map(center=(45,0),zoom=7,layout={"height":"500px"})
         # Date 
         date_picker = widg.DatePicker(value=dt.datetime(2020,1,26))
         self._date = date_picker.value 
         date_picker.observe(self.change_date,"value")
         self.step = 0
+        self.distance_choice=distance_choice
         variable_picker = widg.Dropdown(value="WWMF",options=["WWMF","WME","W1","PRECIP","T"])
         variable_picker.observe(self.variable_change,"value")
         dept_picker = widg.Dropdown(value="41",options={"Isère":"38","Hérault":"34","Loire-et-cher":"41"})
@@ -47,7 +52,7 @@ class interactive_map(widg.HBox):
         self.m.add_control(control1)
         self.m.add_control(ipyl.LayersControl())
     
-        slider = widg.IntSlider(min=0,max=len(self.da.step),step=1,value=0,description="step")
+        slider = widg.IntSlider(min=0,max=len(self.da.step)-1,step=1,value=0,description="step")
         slider.observe(self.change_step,'value')
         self.m.add_control(ipyl.WidgetControl(widget=widg.VBox([date_picker,slider,variable_picker,dept_picker]),position="topright"))
         self.m.add_control(ipyl.FullScreenControl())
@@ -115,12 +120,18 @@ class interactive_map(widg.HBox):
     def dept(self,dept):
         self._dept = dept 
         self.get_mask()
+        #print("etape1")
         self.get_sympo_zone()
+        #print("etape2")
+        self.get_sympo_zone2()
+        #print("etape3")
         if hasattr(self,"html1"):
+            print("etape4?")
             self.html1.values = '''<h4>Type de temps</h4>
                         Hover over a pixel
                         '''
         if hasattr(self,"da"):
+            print("etape5?")
             self.render()
         
     def get_sympo_zone(self):
@@ -132,25 +143,24 @@ class interactive_map(widg.HBox):
         fname_mask = '../GeoData/zones_sympo_multiples/'+self.dept+'_mask_zones_sympos.nc'
         da_mask = xr.open_dataarray(fname_mask)
         
-        fileresult='../zonageWME/'+self.dept+'_'+self.date.strftime("%Y%m%d%H")+'_'+str(self.step)+'.csv'
+        fileresult='../zonageWME/v2_'+self.dept+'_'+self.date.strftime("%Y%m%d%H")+'_'+str(self.step)+'.csv'
+        print(fileresult)
         try:
             f = open(fileresult)
             dfres=pd.read_csv(fileresult,sep=',',index_col=0)
             zs_l=dfres["zone"].to_list()
             self.dfres=dfres
         except IOError:
-            #print("File not accessible")
+            print("File not accessible")
             zs_l=["departement"]
             if hasattr(self,"dfres"):
-                    del(self.dfres)  # we suppress the attribute in order to ignore the condition in update_chor_html      
-        
-        
+                    del(self.dfres)  # we suppress the attribute in order to ignore the condition in update_chor_html  
+                    
+ 
         self.da_zone = da_mask.sel(id=zs_l).load()
         
         self.da_zone["latitude"] = self.da_zone.latitude.round(5)
         self.da_zone["longitude"] = self.da_zone.longitude.round(5)
-        #zsympo = "../GeoData/ZonesSympo/zones_sympo_4326.json"
-        #zsympo = "../GeoData/ZonesSympo/zones_sympo_"+self.dept+".json"
         zsympo = "../GeoData/ZonesSympo/zones_sympo_combined_"+self.dept+".json"
         
         with open(zsympo) as geojson1:
@@ -166,6 +176,115 @@ class interactive_map(widg.HBox):
                 new_poly["features"].append(x)
         self.region_geo = new_poly 
         if hasattr(self,"da"):
+            #print('passe ici')
+            self.aggregate()
+            
+            
+    def zones_homogenes(self):
+        """
+        retourne les zones et les temps sensibles resultant de la division sur critere d homogeneite
+        """
+        zone_l=[]
+        temps_l=[]
+        
+        i=self.step
+        
+        if np.all(self.dfres2.iloc[i][['zone_winning_2','zone_winning_comp']]!=9999):
+            #print('passe la')
+            zone_l.append(self.dfres2.iloc[i][['zone_winning_2','zone_winning_comp']].tolist())
+            temps_l.append(self.dfres2.iloc[i][['zw2_'+self.distance_choice,'zwc_'+self.distance_choice]].tolist())
+        else:
+            #print('alors la')
+            zone_l.append(self.dfres2.iloc[i][['zone_winning']].tolist())
+            temps_l.append(self.dfres2.iloc[i][['zw_'+self.distance_choice]].tolist())
+        
+        if np.all(self.dfres2.iloc[i][['zone_comp_winning','zone_comp_comp']]!=9999):
+            #print('passe ici')
+            zone_l.append(self.dfres2.iloc[i][['zone_comp_winning','zone_comp_comp']].tolist())
+            temps_l.append(self.dfres2.iloc[i][['zcw_'+self.distance_choice,'zc2_'+self.distance_choice]].tolist())
+        else: 
+            if np.all(self.dfres2.iloc[i][['zone_winning']]!="departement"): # if zone_winning == "departement" alors on ne s'interesse pas à la zone complémentaire
+                #print('alors ici')
+                zone_l.append(self.dfres2.iloc[i][['zone_comp']].tolist())
+                temps_l.append(self.dfres2.iloc[i][['zc_'+self.distance_choice]].tolist())
+            
+        self.zs_l=[item for sublist in zone_l for item in sublist] # flatten the list (not a list of lists)
+        self.temps_l=[int(item) for sublist in temps_l for item in sublist] # idem
+        
+    
+    def get_sympo_zone2(self):
+        """
+        Retourne les zones du departement concernes
+        """
+          
+        # read the zone sympos file for the corresponding department
+        fname_mask = '../GeoData/zones_sympo_multiples/'+self.dept+'_mask_zones_sympos.nc'
+        da_mask = xr.open_dataarray(fname_mask)
+        
+        fileresult='../zonage_homogeneous_criterion/'+self.dept+'_'+self.date.strftime("%Y%m%d%H%M")+'_'+self.distance_choice+'.csv'
+        print(fileresult)
+        try:
+            f = open(fileresult)
+            dfres2=pd.read_csv(fileresult,sep=',',index_col=0, na_filter=True, dtype={'zone_winning_comp':str}) # for some reason, zones from this columns are considered float otherwise (41_202001260000_compas.csv)
+            dfres2=dfres2.fillna(9999)            
+            
+            # ajout fonction
+            self.dfres2=dfres2
+            self.zones_homogenes()
+            #print(self.zs_l)
+            #print(self.temps_l)
+            # fin ajout
+
+        except IOError:
+            print("File not accessible2")
+            self.zs_l=["departement"]
+            if hasattr(self,"dfres2"):
+                    del(self.dfres2)  # we suppress the attribute in order to ignore the condition in update_chor_html  
+        
+        # when the combined zone is not part of the "zones_sympo_combined_dpt.json" we need to create it
+        with open("../GeoData/ZonesSympo/zones_sympo_4326.json","r") as fp: 
+            poly_geo = json.load(fp)
+        # list of the zones sympo id in the json file (zones_sympo_4326.json)
+        feature=[]
+        zs_json=[poly_geo["features"][i]["properties"]["id"] for i in range(len(poly_geo["features"]))]
+        for ival,val in enumerate(self.zs_l):
+            if not (val in list(da_mask.id.values)):
+                #print('qd est ce qu on est dans ce cas ci?',val,self.step)
+                val_l=val.split('+')
+                for j,zs in enumerate(val_l):
+                    if j==0: # init shape
+                        id_json=zs_json.index(zs)
+                        shape = sh.asShape(poly_geo['features'][id_json]['geometry'])
+                    else:
+                        id_json=zs_json.index(zs)
+                        shape=shape.union(sh.asShape(poly_geo['features'][id_json]['geometry']))
+                feature.append(geojson.Feature(geometry=shape,properties = {'id':val}))
+        
+        # for the sake of not bugging the function ipyl.Choropleth
+        self.toto = dict(zip(self.zs_l, list(np.arange(len(self.zs_l)).astype(float)))) 
+        data = geojson.FeatureCollection(feature)
+        
+        zsympo = "../GeoData/ZonesSympo/zones_sympo_combined_"+self.dept+".json"
+        
+        with open(zsympo) as geojson1:
+            poly_geojson = json.load(geojson1)
+        
+        if not len(feature)==0:
+            feature_extend=poly_geojson["features"]+data["features"]
+        else:
+            feature_extend=poly_geojson["features"]        
+        new_poly  ={}
+        new_poly["type"] = poly_geojson["type"]
+        #new_poly["crs"] = poly_geojson["crs"]
+        new_poly["features"] = []
+        
+        for x in feature_extend:
+            if x["properties"]["id"] in self.zs_l:
+                x['id'] = x["properties"]["id"]
+                new_poly["features"].append(x)
+        self.region_geo2 = new_poly 
+        if hasattr(self,"da"):
+            #print('passe dans da')
             self.aggregate()
             
     def change_dept(self,change):
@@ -279,10 +398,50 @@ class interactive_map(widg.HBox):
             <h4> Valeur sur {} </h4>
             <h4><b>Not calculated</b></h4>
             '''.format(feature["properties"]["id"])
+        
+    def update_chor_html2(self,feature,**kwargs):
+        
+        if hasattr(self, "dfres2"):
+            id_i = feature["properties"]["id"]
+            ind=self.zs_l.index(id_i)
+            x=self.temps_l[ind]
+            
+            filecodeswwmf='../utils/CodesWWMF.csv'
+            df=pd.read_csv(filecodeswwmf,sep=',')
+            
+            if "compas" in self.distance_choice:
+                xstr=np.unique(df.loc[df['Code WME']==x]['Legende WME'])[0]
+            elif "agat" in self.distance_choice:
+                xstr=np.unique(df.loc[df['Code W1']==x]['Legende W1'])[0]
+            else:
+                print("warning, none of the 2 options (compas or agat) were found, please check again!")
+            
+            # avec le code
+            self.html1.value = '''
+            <h4> Valeur sur {} </h4>
+            <h4><b>{}: {} {}</b></h4>           
+            '''.format(feature["properties"]["id"],self.distance_choice,xstr,x)
+            
+            # sans le code juste le descriptif
+            #self.html1.value = '''
+            #<h4> Valeur sur {} </h4>
+            #<h4><b>cible wme: {}</b></h4>
+            #<h4><b>compas: {}</b></h4>
+            #<h4><b>agat: {}</b></h4>
+            #<h4><b>compas asym: {}</b></h4>
+            #<h4><b>agat asym: {}</b></h4>            
+            #'''.format(feature["properties"]["id"],rstr,wstr,xstr,ystr,zstr)
+                                                            
+        else: 
+            self.html1.value = '''
+            <h4> Valeur sur {} </h4>
+            <h4><b>Not calculated</b></h4>
+            '''.format(feature["properties"]["id"])
             
     def change_step(self,change):
         self.step = change["new"]
         self.get_sympo_zone()
+        self.get_sympo_zone2()
         self.render()
         
     def render(self):
@@ -294,6 +453,7 @@ class interactive_map(widg.HBox):
             if self.geojson_layer in self.m.layers:
                 self.m.substitute_layer(self.geojson_layer,geojson_layer)
             else: 
+                #print("par ici?")
                 self.m.add_layer(geojson_layer)
         else:
             self.m.add_layer(geojson_layer)
@@ -302,24 +462,46 @@ class interactive_map(widg.HBox):
         legend_file.seek(0)
         self.legend.value =legend_file.read()
     
-        
+    
         chor_layer = ipyl.Choropleth(geo_data=self.region_geo,
                                     choro_data=self.da_aggregated.isel(step=self.step).to_pandas().to_dict(),
                                     name="zonage sur temps sensible (WME)",
                                     value_min = self.vmin,
                                     value_max = self.vmax,
-                                    colormap=linear.RdBu_03)
+                                    colormap=linear.RdBu_03)      
             
         if hasattr(self,"chor_layer"):
             if self.chor_layer in self.m.layers:
                 #print("on passe la")
                 self.m.substitute_layer(self.chor_layer,chor_layer)
             else: 
+                #print("ici")
                 self.m.add_layer(chor_layer)
         else:
+            #print('ou la')
             self.m.add_layer(chor_layer)
         self.chor_layer = chor_layer
         self.chor_layer.on_hover(self.update_chor_html)
+
+        chor_layer2 = ipyl.Choropleth(geo_data=self.region_geo2,
+                                    choro_data=self.toto,
+                                    name="zonage sur homogeneous temps sensible criterion ("+self.distance_choice+")",
+                                    value_min = self.vmin,
+                                    value_max = self.vmax,
+                                    colormap=linear.RdBu_07)
+        
+        if hasattr(self,"chor_layer2"):
+            if self.chor_layer2 in self.m.layers:
+                #print("et par la")
+                self.m.substitute_layer(self.chor_layer2,chor_layer2)
+            else: 
+                #print('et ici')
+                self.m.add_layer(chor_layer2)
+        else:
+            #print('et ou la')
+            self.m.add_layer(chor_layer2)
+        self.chor_layer2 = chor_layer2
+        self.chor_layer2.on_hover(self.update_chor_html2)
         
         
 class contour_interactive(interactive_map):
@@ -348,6 +530,7 @@ class contour_interactive(interactive_map):
         
         if variable in ["WWMF","W1","WME"]: 
             legend_file = BytesIO()
+            
             geo_contour = geo_gv.get_WeatherType_contour(da,
                                                          variable=variable,
                                                          colorbar_title=legend_file)
