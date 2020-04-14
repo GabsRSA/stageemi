@@ -202,8 +202,9 @@ def define_color_bar_pixel_wwmf(cmap,colorbar_title,orientation="vertical",min_v
         plt.savefig(colorbar_title)
         plt.close()
     else:
+        #print("estce quon passe ici?")
         fig = plt.figure(figsize = (2,10))
-        ax1 = fig.add_axes([0.05, 0.12, 0.2, 0.87])
+        ax1 = fig.add_axes([0.05, 0.02, 0.2, 0.97])
         
         if 'color_bar_type' in opt:            
             #print('on est rentre dans la colorbar discrete')
