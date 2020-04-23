@@ -237,7 +237,7 @@ def generate_discrete_colorbar(rgb_color,code,colorbar_title):
     import matplotlib as mpl
     import matplotlib.pyplot as plt
     fig = plt.figure(figsize = (2,10))
-    ax1 = fig.add_axes([0.05, 0.12, 0.2, 0.87])
+    ax1 = fig.add_axes([0.05, 0.02, 0.2, 0.97])
     N = len(rgb_color)
     newcmp = ListedColormap(rgb_color)                    
     bounds=np.linspace(0,N,N+1)

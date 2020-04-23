@@ -32,7 +32,7 @@ class interactive_map(widg.HBox):
         self.distance_choice=distance_choice
         variable_picker = widg.Dropdown(value="WWMF",options=["WWMF","WME","W1","PRECIP","T"])
         variable_picker.observe(self.variable_change,"value")
-        dept_picker = widg.Dropdown(value="41",options={"Isère":"38","Hérault":"34","Loire-et-cher":"41"})
+        dept_picker = widg.Dropdown(value="41",options={"Finistère":"29","Isère":"38","Hérault":"34","Loire-et-cher":"41"})
         dept_picker.observe(self.change_dept,"value")
         self.dept = dept_picker.value 
         self._variable = variable_picker.value
@@ -100,7 +100,9 @@ class interactive_map(widg.HBox):
    
         
     def get_mask(self):
-        if self.dept == "38":
+        if self.dept == "29":
+            da_mask = xr.open_dataarray("../GeoData/nc_departement/FRH02.nc")
+        elif self.dept == "38":
             da_mask = xr.open_dataarray("../GeoData/nc_departement/FRK24.nc")
         elif self.dept == "34":
             da_mask = xr.open_dataarray("../GeoData/nc_departement/FRJ13.nc")
