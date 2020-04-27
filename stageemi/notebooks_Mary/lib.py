@@ -485,24 +485,20 @@ def create_combination_subzones(dir_mask,dep_id,lst_subzones,fname_out,degre5=Fa
     return ds_mask
 
 
-
-
-
 '''
     Fonctions pour zoner un departement 
 '''
-
-def get_optimal_subzone_v2(ds_WME, groupe_mask_select,cible,ds_mask):
+def get_optimal_subzone_v2(ds_WME, groupe_mask_select,cible):
     """
         ds_WME  = xarray contenant les champs WME
         cible = valeur du temps sensible cible (par exemple code WME)
         groupe_mask_select = ensemble de masks qui vont être comparés à l'objet météo
         ds_mask = La liste de masques
     """
-    score_precision = np.zeros(len(groupe_mask_select))    
-    score_hss       = np.zeros(len(groupe_mask_select)) 
-    
-    for imask,ds_mask_sub in enumerate(groupe_mask_select):    
+    score_precision = np.zeros(len(groupe_mask_select.mask))    
+    score_hss       = np.zeros(len(groupe_mask_select.mask)) 
+
+    for imask,ds_mask_sub in enumerate(groupe_mask_select.mask):    
         # check if latitudes are aranged in the the same way
         lat1 = ds_mask_sub.latitude.values
         lat2 = ds_WME.latitude.values
@@ -521,11 +517,13 @@ def get_optimal_subzone_v2(ds_WME, groupe_mask_select,cible,ds_mask):
         y_true = y_true.where(~(y_true.values == cible), 1)
         y_true_score = y_true.values[~np.isnan(y_true.values)]
         y_pred_score = y_pred.values[~np.isnan(y_pred.values)]
+    #     print(y_true_score,y_pred_score )
         # metriques : 
         score_precision[imask] = precision(y_true_score,y_pred_score)
         score_hss[imask]       = hss(y_true_score,y_pred_score)
-        
+
     ind_nan = np.where((~np.isnan(score_hss))*(score_hss>0))
+
     # car si hss <0, alors le hasard fait mieux les choses
     if np.size(ind_nan[0])== 0 :
         # signifie qu'il y a aucune zone qui représente bien la cible
@@ -536,36 +534,31 @@ def get_optimal_subzone_v2(ds_WME, groupe_mask_select,cible,ds_mask):
         zones_optimales_f = [groupe_mask_select.id.values[ind_nan][0]]
         hss_f             = [score_hss[ind_nan][0]]
         precision_f       = [score_precision[ind_nan][0]]
+
     else: 
-        indice = np.argsort(score_hss[ind_nan])[::-1][:2]
-        zones_optimales = groupe_mask_select.id.values[ind_nan][indice].tolist()
-        if score_precision[ind_nan][indice][1]>0.2 and \
-            np.abs(score_hss[ind_nan][indice][1] - score_hss[ind_nan][indice][0]) / score_hss[ind_nan][indice][0] <0.2: 
-            # si la fraction de l'événement est supérieure à 20% dans la zone, et si les hss des deux meilleures zones 
-            # sont similaires
-            best_zones = zones_optimales
-            # check de l'inclusion de l'une ou l'autre des zones
-            list_neighbours = best_zones[::-1]
-            list_ref        = best_zones 
-            for iref in range(len(list_ref)):
-                mask_ref=ds_mask.sel(id=list_ref[iref])
-                lst_mask_not_included, lst_mask_included = get_not_included_masks(mask_ref.mask, [list_neighbours[iref]],ds_mask,flag_strictly_included=True)
-                if len(lst_mask_included)>0 :
-                    # signifie que un des deux masks est inclu dans l'autre
-                    zones_optimales_f = [list_ref[iref]]
-                    hss_f             = [score_hss[ind_nan][indice][iref]]
-                    precision_f       = [score_precision[ind_nan][indice][iref]]
-                    break
-                else:
-                    zones_optimales_f = best_zones
-                    hss_f             = score_hss[ind_nan][indice].tolist()
-                    precision_f       = score_precision[ind_nan][indice].tolist()
-        else: 
-            # tant pis on prend qu'une seule zone
-            zones_optimales_f = [groupe_mask_select.id.values[ind_nan][indice][0]]
-            hss_f             = [score_hss[ind_nan][indice][0]]
-            precision_f       = [score_precision[ind_nan][indice][0]]
+
+        # selection de la zone qui maximise le hss
+        indice = np.argmax(score_hss[ind_nan]) 
+        zones_optimales_f = [groupe_mask_select.id.values[ind_nan][indice]]
+        hss_f             = [score_hss[ind_nan][indice]]
+        precision_f       = [score_precision[ind_nan][indice]] 
+        mask_ref          =  groupe_mask_select.sel(id=zones_optimales_f[0]).mask
+        # on cherche les zones non-incluses dans cette zone pour aller chercher le deuxième meilleur hss
+        lst_mask_not_included, lst_mask_included = get_not_included_masks(mask_ref, groupe_mask_select.id.values[ind_nan],
+                                                    groupe_mask_select,flag_strictly_included=False)
+        print(zones_optimales_f[0],lst_mask_not_included)
+        if(len(lst_mask_not_included)>0):
+            score_hss2 = [score_hss[ind_nan][groupe_mask_select.id.values[ind_nan] == mask_id] for mask_id in lst_mask_not_included]
+            score_precision2 = [score_precision[ind_nan][groupe_mask_select.id.values[ind_nan] == mask_id] for mask_id in lst_mask_not_included]
+            list_mask2 = [groupe_mask_select.id.values[ind_nan][groupe_mask_select.id.values[ind_nan] == mask_id] for mask_id in lst_mask_not_included]
+            indice2 = np.argmax(score_hss2)    
+            if score_precision2[indice2]>0.2 and \
+                np.abs(score_hss[ind_nan][indice] - score_hss2[indice2]) / score_hss[ind_nan][indice] <0.2:
+                zones_optimales_f.append(list_mask2[indice2].tolist()[0]) #groupe_mask_select.id.values[ind_nan][indice2])
+                hss_f.append(score_hss2[indice2])
+                precision_f.append(score_precision2[indice2] )
     return zones_optimales_f,hss_f,precision_f
+
 
 
 def get_WME_legend(file_CodesWWMF, ds):
@@ -592,13 +585,13 @@ def group_masks_size(listMasks,ds_mask):
     taille1,taille2 = np.quantile(taille_masks,[1/3,2/3])
 
     ind1 = np.where( (taille_masks < taille1) & (taille_masks > 0))
-    groupe1 = ds_mask.sel(id=listMasks).mask.isel(id=ind1[0])
+    groupe1 = ds_mask.sel(id=listMasks).isel(id=ind1[0])
 
     ind2 = np.where((taille_masks >= taille1) & (taille_masks < taille2))
-    groupe2 = ds_mask.sel(id=listMasks).mask.isel(id=ind2[0])
+    groupe2 = ds_mask.sel(id=listMasks).isel(id=ind2[0])
 
     ind3 = np.where((taille_masks >= taille2))
-    groupe3 = ds_mask.sel(id=listMasks).mask.isel(id=ind3[0])
+    groupe3 = ds_mask.sel(id=listMasks).isel(id=ind3[0])
 
     return groupe1,groupe2,groupe3,taille1,taille2 
 
