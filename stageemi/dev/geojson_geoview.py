@@ -249,6 +249,25 @@ def generate_discrete_colorbar(rgb_color,code,colorbar_title):
     plt.savefig(colorbar_title)
     plt.close()
 
+def get_cmap_info(variable="WME"):
+    dirname = os.path.dirname(__file__)
+    file_CodesWWMF = os.path.join(dirname, '../utils/CodesWWMF.csv')    
+    df = pd.read_csv(file_CodesWWMF,usecols = (0,1,2,3,6,7),sep=',') 
+    if variable == "WWMF":
+        df_crop = df[["Code WWMF","Legende WWMF"]].set_index("Code WWMF").rename(columns={"Legende WWMF":"Legende"})
+    elif variable == "WME":
+        df_crop = df[["Code WME","Legende WME"]].set_index("Code WME").drop_duplicates().rename(columns={"Legende WME":"Legende"})
+    elif variable == "W1":
+        df_crop = df[["Code W1","Legende W1"]].set_index("Code W1").drop_duplicates().rename(columns={"Legende W1":"Legende"})   
+    else:
+        raise(ValueError("Variable unkonwn : %s "%variable))
+    N = df_crop.size
+    code_WWMF = df_crop.index.to_numpy().astype(np.int)
+    code_WWMF.sort()
+    
+    hex_color, rgb_color = colorbar_definition_wwmf(N,'viridis',variable=variable)   
+    return (code_WWMF,hex_color,rgb_color)
+
 def get_WeatherType_contour(da,variable,lat_name ="latitude",lon_name="longitude",colorbar_title="my_colorbar.png",**kwargs):
     
     dirname = os.path.dirname(__file__)
@@ -274,7 +293,6 @@ def get_WeatherType_contour(da,variable,lat_name ="latitude",lon_name="longitude
   
     
     da.name = "test"
-    print(type(list_level))
     geo_contour = get_contour(da,levels=list_level,qualitative=True,buffer=2e-4)
 
     for contour in geo_contour["features"]:
