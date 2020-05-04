@@ -128,6 +128,8 @@ def get_contour(ds,lat_name ="latitude",lon_name="longitude",levels=10,**kwargs)
                 mp_final = dict_poly[i]["geometry"]
         
         if kwargs.get("qualitative",False) and not mp_final.is_empty:
+            # Permet d'avoir un rendu un peu plus net sur les variables qualitative. 
+            # Pas obligatoire
             buffer_arg = kwargs.get("buffer",5e-4)
             mp_temp = mp_final.buffer(-buffer_arg).buffer(1.1*buffer_arg)    
             if mp_temp.area > 0:
@@ -236,7 +238,8 @@ def generate_discrete_colorbar(rgb_color,code,colorbar_title):
     from matplotlib.colors import ListedColormap
     import matplotlib as mpl
     import matplotlib.pyplot as plt
-    fig = plt.figure(figsize = (2,10))
+    
+    fig = plt.figure(figsize = (4,10))
     ax1 = fig.add_axes([0.05, 0.02, 0.2, 0.97])
     N = len(rgb_color)
     newcmp = ListedColormap(rgb_color)                    
@@ -281,6 +284,8 @@ def get_WeatherType_contour(da,variable,lat_name ="latitude",lon_name="longitude
         df_crop = df[["Code W1","Legende W1"]].set_index("Code W1").drop_duplicates().rename(columns={"Legende W1":"Legende"})   
     else:
         raise(ValueError("Variable unkonwn : %s "%variable))
+    df_crop = df_crop.sort_index()
+   
     ## On recupere les codes uniques de ce type de temps sensible         
     N = df_crop.size
     code_WWMF = df_crop.index.to_numpy().astype(np.int)
@@ -293,7 +298,7 @@ def get_WeatherType_contour(da,variable,lat_name ="latitude",lon_name="longitude
   
     
     da.name = "test"
-    geo_contour = get_contour(da,levels=list_level,qualitative=True,buffer=2e-4)
+    geo_contour = get_contour(da,levels=list_level,qualitative=False,buffer=2e-4)
 
     for contour in geo_contour["features"]:
         max_val = contour["properties"]["value_max"]
@@ -303,7 +308,10 @@ def get_WeatherType_contour(da,variable,lat_name ="latitude",lon_name="longitude
             contour["properties"]["legend"] = df_crop.loc[int(max_val),"Legende"]
         else:
             print("Index not found %s for this variable %s"%(max_val,variable))
-            print(df_crop)
-    generate_discrete_colorbar(rgb_color,code_WWMF,colorbar_title)
+    if variable in ["W1","WME"]:
+     
+        generate_discrete_colorbar(rgb_color,df_crop.Legende.to_list(),colorbar_title)
+    else:
+        generate_discrete_colorbar(rgb_color,code_WWMF,colorbar_title)
     # On va maintenant modifier les couleurs pour etre en accord avec la colorbar. 
     return geo_contour
